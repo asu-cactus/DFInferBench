@@ -24,7 +24,6 @@ def load_data_from_pickle(dataset, config, suffix, time_consume):
         time_consume["data loading time"] = data_loading_time
     print(
         f"Time Taken to load {dataset} as a dataframe is: {data_loading_time}")
-    # import pdb; pdb.set_trace()
     return dataframe
 
 def fetch_criteo(suffix, time_consume):

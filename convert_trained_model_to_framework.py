@@ -77,12 +77,12 @@ def convert_to_torch_model(model, config):
 def convert_to_tf_df_model(model, config):
     # Converting to TF-DF model
     import tensorflow as tf
-    import scikit_learn_model_converter  # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
-    import xgboost_model_converter  # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
+    import external.scikit_learn_model_converter as sk2tfdf_converter  # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
+    import xgboost_model_converter as xgb2tfdf_converter # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
 
     if MODEL == "randomforest":
         tfdf_time_start = time.time()
-        tensorflow_model = scikit_learn_model_converter.convert(model,  intermediate_write_path="intermediate_path", )
+        tensorflow_model = sk2tfdf_converter.convert(model,  intermediate_write_path="intermediate_path", )
         libpath = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_tfdf")
         tf.saved_model.save(obj=tensorflow_model, export_dir=libpath)
         tfdf_time_end = time.time()
@@ -90,7 +90,7 @@ def convert_to_tf_df_model(model, config):
 
     elif MODEL == "xgboost":
         tfdf_time_start = time.time()
-        tensorflow_model = xgboost_model_converter.convert(model, intermediate_write_path="intermediate_path",)
+        tensorflow_model = xgb2tfdf_converter.convert(model, intermediate_write_path="intermediate_path",)
         libpath = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_tfdf")
         tf.saved_model.save(obj=tensorflow_model, export_dir=libpath)
         tfdf_time_end = time.time()
