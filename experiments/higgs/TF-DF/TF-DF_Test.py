@@ -11,7 +11,7 @@ import connectorx as cx
 from sklearn import tree
 import tensorflow as tf
 import tensorflow_decision_forests as tfdf
-import scikit_learn_model_converter
+import external.scikit_learn_model_converter as scikit_learn_model_converter
 
 DATASET = "higgs"
 CLASSIFIER = "randomforest"
