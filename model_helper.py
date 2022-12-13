@@ -30,6 +30,8 @@ def load_data_from_pickle(dataset, config, suffix, time_consume):
 def fetch_criteo(suffix, time_consume):
     from sklearn import datasets
     start_time = time.time()
+    #10000 rows
+    #x,y = datasets.load_svmlight_file('dataset/criteo.kaggle2014.svm/test.txt.svm', dtype=np.float32,n_features=1000000,length=5833000)
     path = relative2abspath(dataset_folder, "criteo.kaggle2014.svm", f"{suffix}.txt.svm")
     x, y = datasets.load_svmlight_file(path, dtype=np.float32)
     data_loading_time = calculate_time(start_time,time.time())
@@ -101,7 +103,24 @@ def convert_to_hummingbird_model(model, backend, test_data, batch_size, device):
                               remainder_size, device=device, extra_config=extra_config)
     return model
 
-def run_inference(framework, features, input_size, query_size, predict, time_consume, is_classification):
+def make_predict(dataset_type,model_predict,time_consume):
+    if dataset_type=="sparse":
+        if "dense_conversion" not in time_consume:
+            time_consume["dense_conversion"] = 0
+        def predict(query):
+            pre_time_consume = time_consume
+            start_time = time.time()
+            query = query.todense()
+            end_time = time.time()
+            pre_time_consume["dense_conversion"] +=(end_time-start_time)
+            return model_predict(query)
+        
+        return predict
+
+    return model_predict
+
+def run_inference(framework, features, input_size, query_size, predict, time_consume, is_classification,dataset_type):
+    predict = make_predict(dataset_type,predict,time_consume)
     start_time = time.time()
     results = []
     iterations = math.ceil(input_size/query_size)
