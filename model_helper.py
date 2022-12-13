@@ -196,9 +196,9 @@ def check_argument_conflicts(args):
 
     if hasattr(args, "frameworks"):
         frameworks = args.frameworks.lower().split(",")
-        if "treelite" in frameworks and model == "randomforest":
-            raise ValueError(
-                "TreeLite models only supports xgboost algorithm, but does not support randomforest algorithm.")
+        # if "treelite" in frameworks and model == "randomforest":
+        #     raise ValueError(
+        #         "TreeLite models only supports xgboost algorithm, but does not support randomforest algorithm.")
         if "lleaves" in frameworks and not model == "lightgbm":
             raise ValueError(
                 "LLeaves Framework supports compilation of LightGBM Models.")

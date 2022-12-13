@@ -1,25 +1,14 @@
 import warnings
 warnings.filterwarnings('ignore')
 
-# from sklearn.ensemble import RandomForestClassifier
-# from sklearn.metrics import classification_report
 import xgboost
-from xgboost import XGBClassifier, XGBRegressor
 import lightgbm
-import treelite
-import treelite.sklearn
 import joblib
 import time
 import json
-import hummingbird.ml as hml
-from skl2onnx.common.data_types import FloatTensorType
-from skl2onnx import convert_sklearn
-import onnxmltools
-import torch
 import os
 import argparse
 from model_helper import *
-
 
 DATASET = "higgs"
 MODEL = "xgboost"
@@ -60,6 +49,7 @@ def parse_arguments(config):
 
 def convert_to_pytorch_model(model, config):
     #converting to pytorch model using hummingbird
+    import hummingbird.ml as hml
     humming_pytorch_time_start = time.time()
     model = hml.convert(model, 'pytorch')
     humming_pytorch_time_end = time.time()
@@ -72,6 +62,8 @@ def convert_to_pytorch_model(model, config):
 
 def convert_to_torch_model(model, config):
     #converting to torch model using hummingbird
+    import hummingbird.ml as hml
+    import torch
     humming_torch_time_start = time.time()
     model = hml.convert(model, 'torch')
     humming_torch_time_end = time.time()
@@ -106,6 +98,9 @@ def convert_to_tf_df_model(model, config):
 
 
 def convert_to_onnx_model(model, config):
+    from skl2onnx.common.data_types import FloatTensorType
+    from skl2onnx import convert_sklearn
+    import onnxmltools
     #converting to ONNX model
     if MODEL == "randomforest":
         onnx_time_start = time.time()
@@ -147,24 +142,19 @@ def convert_to_onnx_model(model, config):
 
 
 def convert_to_treelite_model(model, config):
-    #converting to TreeLite model
     #Prerequisite: install treelite (https://treelite.readthedocs.io/en/latest/install.html)
-    if MODEL in {"xgboost", "lightgbm"}:
-        treelite_time_start = time.time()
-        model_path = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.model")
-        if MODEL == "lightgbm":  # TODO: Rewrite this Logic.
-            model.booster_.save_model(model_path)
-        else:
-            model.save_model(model_path)  # TODO: Why are we saving this directly to a .model format?
-        treelite_model = treelite.Model.load(model_path, model_format=MODEL)
-        toolchain = 'gcc'
-        libpath = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.so")
-        treelite_model.export_lib(toolchain, libpath, verbose=True, params={"parallel_comp":os.cpu_count()})
-        treelite_time_end = time.time()
-        print("Time taken to convert and write treelite model "+str(calculate_time(treelite_time_start, treelite_time_end)))
-
-    else:
-        print(f"TreeLite only supports conversion from xgboost, lightgbm and sk-learn based models. Does not support {MODEL}.")
+    import treelite
+    treelite_time_start = time.time()
+    if MODEL == "randomforest":
+        treelite_model = treelite.sklearn.import_model(model)
+    elif MODEL == "xgboost":
+        treelite_model = treelite.Model.from_xgboost(model)
+    elif MODEL == "lightgbm":
+        treelite_model = treelite.Model.from_lightgbm(model)
+    libpath = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.so")
+    treelite_model.export_lib(toolchain='gcc', libpath=libpath, verbose=True, params={"parallel_comp":os.cpu_count()})
+    treelite_time_end = time.time()
+    print("Time taken to convert and write treelite model "+str(calculate_time(treelite_time_start, treelite_time_end)))
 
 
 def convert_to_lleaves_model(model, config):
@@ -199,7 +189,6 @@ def convert_to_netsdb_model(model, config):
     
     if MODEL == "randomforest":
         estimators = model.estimators_
-
         for index, model in enumerate(estimators):
             output_file_path = os.path.join(netsdb_model_path, str(index)+'.txt')
             data = export_graphviz(model, class_names=True)
@@ -235,9 +224,6 @@ def convert_to_xgboost_model(model,config):
         model.save_model(model_path)
     else:
         raise("Model not xgboost or model already exists")
-
-
-
 
 
 def convert(model, config):
