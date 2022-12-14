@@ -1,3 +1,13 @@
+# Decision Forest Inference Benchmark Suite
+
+We provide a comprehensive benchmark framework for decision forest model inferences. 
+
+The framework covers three algorithms: RandomForest, XGBoost, and LightGBM. 
+
+The framework supports most of the popular decision forest inference platforms, including Scikit-Learn, XGBoost, LightGBM, ONNX, HummingBird, TreeLite, lleaves, TensorFlow TFDF, cu-ml, and so on.
+
+The framework also supports multiple well-known workloads, including Higgs, Airline, Fraud, TPCx-AI fraud detection, year, Bosch, Epsilon, Crieto.
+
 # Benchmark Environment Setup
 
 ## Python version
