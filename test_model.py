@@ -208,7 +208,7 @@ def test_cpu(args, features, label, sklearnmodel, config, time_consume):
     elif FRAMEWORK == "TFDF":
         import tensorflow as tf
         import tensorflow_decision_forests as tfdf
-        import scikit_learn_model_converter
+        import external.scikit_learn_model_converter as scikit_learn_model_converter
         import xgboost_model_converter
         start_time = time.time()
         if MODEL == "randomforest":

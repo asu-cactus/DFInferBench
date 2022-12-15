@@ -8,7 +8,6 @@ import pandas as pd
 from urllib.request import urlretrieve
 import psycopg2
 from sklearn import datasets
-from sklearn.utils import shuffle
 import argparse
 import math
 import sys
