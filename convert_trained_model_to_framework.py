@@ -10,22 +10,22 @@ import os
 import argparse
 from model_helper import *
 
-DATASET = "higgs"
-MODEL = "xgboost"
+DATASET = None
+MODEL = None
 FRAMEWORKS = None
 
 def parse_arguments(config):
     # check_argument_conflicts(args)  # TODO: Move this function from the bottom to here, after checking with Prof.
     global DATASET, MODEL, FRAMEWORKS
     parser = argparse.ArgumentParser(description='Arguments for train_model.')
-    parser.add_argument("-d", "--dataset", type=str, choices=['higgs', 'airline_classification', 'airline_regression', 'fraud', 'year', 'epsilon', 'bosch', 'covtype', 'tpcxai_fraud', 'criteo'],
+    parser.add_argument("-d", "--dataset", required=True, type=str, choices=['higgs', 'airline_classification', 'airline_regression', 'fraud', 'year', 'epsilon', 'bosch', 'covtype', 'tpcxai_fraud', 'criteo'],
         help="Dataset to be trained. Choose from ['higgs', 'airline_classification', 'airline_regression', 'fraud', 'year', 'epsilon', 'bosch', 'covtype', 'tpcxai_fraud', 'criteo]")
 
-    parser.add_argument("-m", "--model", type=str, choices=['randomforest', 'xgboost', 'lightgbm'],
+    parser.add_argument("-m", "--model", required=True, type=str, choices=['randomforest', 'xgboost', 'lightgbm'],
         help="Model name. Choose from ['randomforest', 'xgboost', 'lightgbm']")
-    parser.add_argument("-f", "--frameworks", type=str,
+    parser.add_argument("-f", "--frameworks", required=True, type=str,
         help="Zero to multiple values from ['pytorch', 'torch', 'tf-df', 'onnx', 'treelite', 'lleaves', 'netsdb'], seperated by ','")
-    parser.add_argument("-t", "--num_trees", type=int,
+    parser.add_argument("-t", "--num_trees", type=int, default=10,
         help="Number of trees for the model")
     args = parser.parse_args()
     if args.dataset:
@@ -179,41 +179,40 @@ def convert_to_lleaves_model(model, config):
 def convert_to_netsdb_model(model, config):
     #converting to netsDB model
     from sklearn.tree import export_graphviz
-    import graphviz
     import os
     
+    # netsdb_model_dirname = f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_netsdb"
     netsdb_model_path = os.path.join("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_netsdb")
-
     if os.path.exists(netsdb_model_path) == False:
         os.mkdir(netsdb_model_path)
     
     if MODEL == "randomforest":
-        estimators = model.estimators_
-        for index, model in enumerate(estimators):
-            output_file_path = os.path.join(netsdb_model_path, str(index)+'.txt')
+        for index, model in enumerate(model.estimators_):
+            output_file_path = os.path.join(netsdb_model_path, f'{index}.txt')
             data = export_graphviz(model, class_names=True)
-            f = open(output_file_path, 'w')
-            f.write(data) 
-            f.close()
+            with open(output_file_path, 'w') as f:
+                f.write(data) 
 
     elif MODEL == "xgboost":
         num_trees = config['num_trees']
-        
         for index in range(num_trees):
-            output_file_path = os.path.join(netsdb_model_path, str(index)+'.txt') 
+            output_file_path = os.path.join(netsdb_model_path, f'{index}.txt') 
             data = xgboost.to_graphviz(model, num_trees=index)
-            f = open(output_file_path, 'w')
-            f.write(str(data)) 
-            f.close()
-
+            with open(output_file_path, 'w') as f:
+                f.write(str(data)) 
+   
     elif MODEL == "lightgbm":
-        num_trees = config['num_trees']
-        for index in range(num_trees):
-            output_file_path = os.path.join(netsdb_model_path, str(index)+'.txt')
-            data = lightgbm.create_tree_digraph(model, tree_index=index)
-            f = open(output_file_path, 'w')
-            f.write(str(data))
-            f.close()
+        df = model.booster_.trees_to_dataframe()
+        for index, tree in df.groupby("tree_index"):
+            output_file_path = os.path.join(netsdb_model_path, f"{index}.csv")
+            tree.to_csv(output_file_path, index=False)
+
+        # for index in range(config['num_trees']):
+        #     output_file_path = os.path.join(netsdb_model_path, str(index)+'.txt')
+        #     data = lightgbm.create_tree_digraph(model, tree_index=index)
+        #     with open(output_file_path, 'w') as f:
+        #         f.write(str(data))
+        
 
 def convert_to_xgboost_model(model,config):
     # clf = joblib.load(relative2abspath('models',model_file))
@@ -236,8 +235,6 @@ def convert(model, config):
         print(border)
         print(f'Converted model to {framework_name}')
         print(border + '\n\n')
-    if FRAMEWORKS is None:
-        return
 
     frameworks = FRAMEWORKS.lower().split(",")
     if "pytorch" in frameworks:
