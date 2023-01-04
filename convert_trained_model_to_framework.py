@@ -2,7 +2,6 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import xgboost
-import lightgbm
 import joblib
 import time
 import json
@@ -148,13 +147,14 @@ def convert_to_treelite_model(model, config):
     if MODEL == "randomforest":
         treelite_model = treelite.sklearn.import_model(model)
     elif MODEL == "xgboost":
-        treelite_model = treelite.Model.from_xgboost(model)
+        treelite_model = treelite.Model.from_xgboost(model.get_booster())
     elif MODEL == "lightgbm":
-        treelite_model = treelite.Model.from_lightgbm(model)
+        treelite_model = treelite.Model.from_lightgbm(model.booster_)
     libpath = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.so")
     treelite_model.export_lib(toolchain='gcc', libpath=libpath, verbose=True, params={"parallel_comp":os.cpu_count()})
     treelite_time_end = time.time()
     print("Time taken to convert and write treelite model "+str(calculate_time(treelite_time_start, treelite_time_end)))
+
 
 
 def convert_to_lleaves_model(model, config):
