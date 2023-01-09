@@ -47,31 +47,35 @@ def parse_arguments(config):
     return args
 
 def convert_to_pytorch_model(model, config):
-    #converting to pytorch model using hummingbird
     import hummingbird.ml as hml
-    humming_pytorch_time_start = time.time()
+    pytorch_time_start = time.time()
     model = hml.convert(model, 'pytorch')
-    humming_pytorch_time_end = time.time()
-    print("Time Taken to convert HummingbirdPyTorch:",calculate_time(humming_pytorch_time_start, humming_pytorch_time_end))
+    pytorch_time_start = time.time()
+    convert_time = calculate_time(pytorch_time_start, pytorch_time_start)
+    print(f"Time Taken to convert HummingbirdPyTorch: {convert_time}")
     
-    save_pytorch_time_start = time.time()
+    pytorch_time_start = time.time()
     model.save(relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_pytorch.pkl"))
-    save_pytorch_time_end = time.time()
-    print("Time taken to save pytorch model "+str(calculate_time(save_pytorch_time_start, save_pytorch_time_end)))
+    pytorch_time_start = time.time()
+    save_time = calculate_time(pytorch_time_start, pytorch_time_start)
+    print(f"Time Taken to save HummingbirdPyTorch: {save_time}")
+    print(f"Total time: {convert_time + save_time}")
 
 def convert_to_torch_model(model, config):
-    #converting to torch model using hummingbird
     import hummingbird.ml as hml
     import torch
-    humming_torch_time_start = time.time()
+    torch_time_start = time.time()
     model = hml.convert(model, 'torch')
-    humming_torch_time_end = time.time()
-    print("Time taken to convert to torch using hummingbird "+str(calculate_time(humming_torch_time_start, humming_torch_time_end)))
+    torch_time_end = time.time()
+    convert_time = calculate_time(torch_time_start, torch_time_end)
+    print(f"Time taken to convert torch model {convert_time}")
     
-    save_torch_time_start = time.time()
+    torch_time_start = time.time()
     torch.save(model, relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_torch.pkl"))
-    save_torch_time_end = time.time()
-    print("Time taken to save torch model "+str(calculate_time(save_torch_time_start, save_torch_time_end)))
+    torch_time_end = time.time()
+    save_time = calculate_time(torch_time_start, torch_time_end)
+    print(f"Time taken to save torch model {save_time}")
+    print(f"Total time: {convert_time + save_time}")
 
 def convert_to_tf_df_model(model, config):
     # Converting to TF-DF model
@@ -82,66 +86,86 @@ def convert_to_tf_df_model(model, config):
     if MODEL == "randomforest":
         tfdf_time_start = time.time()
         tensorflow_model = sk2tfdf_converter.convert(model,  intermediate_write_path="intermediate_path", )
+        tfdf_time_end = time.time()
+        convert_time = calculate_time(tfdf_time_start, tfdf_time_end)
+        print(f"Time taken to convert tfdf randomforest model {convert_time}")
+
         libpath = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_tfdf")
+        tfdf_time_start = time.time()    
         tf.saved_model.save(obj=tensorflow_model, export_dir=libpath)
         tfdf_time_end = time.time()
-        print("Time taken to save tfdf randomforest model "+str(calculate_time(tfdf_time_start, tfdf_time_end)))
-
+        save_time = calculate_time(tfdf_time_start, tfdf_time_end)
+        print(f"Time taken to save tfdf randomforest model {save_time}")
+        print(f"Total time: {convert_time + save_time}")
     elif MODEL == "xgboost":
         tfdf_time_start = time.time()
         tensorflow_model = xgb2tfdf_converter.convert(model, intermediate_write_path="intermediate_path",)
+        tfdf_time_end = time.time()
+        convert_time = calculate_time(tfdf_time_start, tfdf_time_end)
+        print(f"Time taken to convert tfdf xgboost model {convert_time}")
+
         libpath = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_tfdf")
+        tfdf_time_start = time.time()
         tf.saved_model.save(obj=tensorflow_model, export_dir=libpath)
         tfdf_time_end = time.time()
-        print("Time taken to save tfdf xgboost model "+str(calculate_time(tfdf_time_start, tfdf_time_end)))
+        save_time = calculate_time(tfdf_time_start, tfdf_time_end)
+        print(f"Time taken to save tfdf xgboost model {save_time}")
+        print(f"Total time: {convert_time + save_time}")
 
+    else:
+        raise ValueError(f"lightgbm is currently not supported for tf-df.")
+
+    
 
 def convert_to_onnx_model(model, config):
     from skl2onnx.common.data_types import FloatTensorType
     from skl2onnx import convert_sklearn
     import onnxmltools
-    #converting to ONNX model
+   
+    initial_types = [('float_input', FloatTensorType([None, config[DATASET]['num_features']]))]
     if MODEL == "randomforest":
         onnx_time_start = time.time()
-        initial_type = [('float_input', FloatTensorType([None, config[DATASET]['num_features']]))]
-        model_onnx = convert_sklearn(model,'pipeline_xgboost', initial_types=initial_type)  # TODO: xgboost?
+        model_onnx = convert_sklearn(model,'pipeline_randomforest', initial_types=initial_types) 
         onnx_time_end = time.time()
-        print("Time taken to convert onnx using hummingbird "+str(calculate_time(onnx_time_start, onnx_time_end)))  # TODO: How is this hummingbird?
-        
+        convert_time = calculate_time(onnx_time_start, onnx_time_end)
+        print(f"Time taken to convert onnx: {convert_time}") 
         onnx_write_time_start = time.time()
         with open(relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.onnx"), "wb") as f:
             f.write(model_onnx.SerializeToString())
         onnx_write_time_end = time.time()
-        print("Time taken to write onnx model "+str(calculate_time(onnx_write_time_start, onnx_write_time_end)))
+        save_time = calculate_time(onnx_write_time_start, onnx_write_time_end)
+        print(f"Time taken to write onnx model {save_time}")
+
     elif MODEL == "xgboost":
         onnx_time_start = time.time()
-        initial_types = [('float_input', FloatTensorType([None, config[DATASET]['num_features']]))]
         onnx_model = onnxmltools.convert_xgboost(model, initial_types=initial_types)
         onnx_time_end = time.time()
-        print("Time taken to convert onnx using hummingbird "+str(calculate_time(onnx_time_start, onnx_time_end)))  # TODO: How is this hummingbird?
-
-        onnx_write_time_start = time.time()
+        convert_time = calculate_time(onnx_time_start, onnx_time_end)
+        print(f"Time taken to convert onnx: {convert_time}")
+        
         model_save_path = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.onnx")
+        onnx_write_time_start = time.time()
         onnxmltools.utils.save_model(onnx_model, model_save_path)
         onnx_write_time_end = time.time()
-        print("Time taken to write onnx model "+str(calculate_time(onnx_write_time_start, onnx_write_time_end)))
+        save_time = calculate_time(onnx_write_time_start, onnx_write_time_end)
+        print(f"Time taken to write onnx model: {save_time}")
     elif MODEL == "lightgbm":
-        onnx_time_start = time.time()  # TODO: Should we include parameter initialization in the time? Even though, it is negligible.
-        initial_types = [('float_input', FloatTensorType([None, config[DATASET]['num_features']]))]
+        onnx_time_start = time.time()
         onnx_model = onnxmltools.convert_lightgbm(model, initial_types=initial_types)
         onnx_time_end = time.time()
-        print("Time taken to convert onnx using onnxmltools "+str(calculate_time(onnx_time_start, onnx_time_end)))
-
-        onnx_write_time_start = time.time()
+        convert_time = calculate_time(onnx_time_start, onnx_time_end)
+        print(f"Time taken to convert onnx: {convert_time}")
+        
         model_save_path = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.onnx")
+        onnx_write_time_start = time.time()
         onnxmltools.utils.save_model(onnx_model, model_save_path)
         onnx_write_time_end = time.time()
-        print("Time taken to write onnx model "+str(calculate_time(onnx_write_time_start, onnx_write_time_end)))
+        save_time = calculate_time(onnx_write_time_start, onnx_write_time_end)
+        print(f"Time taken to write onnx model: {save_time}")
 
-
+    print(f"Total time: {convert_time + save_time}")
 
 def convert_to_treelite_model(model, config):
-    #Prerequisite: install treelite (https://treelite.readthedocs.io/en/latest/install.html)
     import treelite
     treelite_time_start = time.time()
     if MODEL == "randomforest":
@@ -150,11 +174,17 @@ def convert_to_treelite_model(model, config):
         treelite_model = treelite.Model.from_xgboost(model.get_booster())
     elif MODEL == "lightgbm":
         treelite_model = treelite.Model.from_lightgbm(model.booster_)
+    treelite_time_end = time.time()
+    convert_time = calculate_time(treelite_time_start, treelite_time_end)
+    print(f"Time taken to convert treelite model {convert_time}")
+
+    treelite_time_start = time.time()
     libpath = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.so")
     treelite_model.export_lib(toolchain='gcc', libpath=libpath, verbose=True, params={"parallel_comp":os.cpu_count()})
     treelite_time_end = time.time()
-    print("Time taken to convert and write treelite model "+str(calculate_time(treelite_time_start, treelite_time_end)))
-
+    save_time = calculate_time(treelite_time_start, treelite_time_end)
+    print(f"Time taken to write treelite model: {save_time}")
+    print(f"Total time: {convert_time + save_time}")
 
 
 def convert_to_lleaves_model(model, config):
@@ -169,23 +199,22 @@ def convert_to_lleaves_model(model, config):
         lleaves_model = lleaves.Model(model_file=model_path)
         model_cache_path = relative2abspath("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.elf")
         lleaves_model.compile(cache=model_cache_path)  # NOTE: Same logic to be used for testing. This time, the elf file is loaded instead of compiled.
-        lleaves_time_end = time.time()
-        print("Time taken to convert, compile and write Lleaves model "+str(calculate_time(lleaves_start_time, lleaves_time_end)))
+        lleaves_end_time = time.time()
+        total_time = calculate_time(lleaves_start_time, lleaves_end_time)
+        print(f"Total time: {total_time}")
     else:
         print(f"LLeaves is only supported for LightGBM at the moment. Does not support {MODEL}.")
 
 
-
 def convert_to_netsdb_model(model, config):
-    #converting to netsDB model
     from sklearn.tree import export_graphviz
     import os
     
-    # netsdb_model_dirname = f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_netsdb"
     netsdb_model_path = os.path.join("models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_netsdb")
-    if os.path.exists(netsdb_model_path) == False:
+    if not os.path.exists(netsdb_model_path):
         os.mkdir(netsdb_model_path)
     
+    start_time = time.time()
     if MODEL == "randomforest":
         for index, model in enumerate(model.estimators_):
             output_file_path = os.path.join(netsdb_model_path, f'{index}.txt')
@@ -212,6 +241,9 @@ def convert_to_netsdb_model(model, config):
         #     data = lightgbm.create_tree_digraph(model, tree_index=index)
         #     with open(output_file_path, 'w') as f:
         #         f.write(str(data))
+    end_time = time.time()
+    total_time = calculate_time(start_time, end_time)
+    print(f"Total time: {total_time}")
         
 
 def convert_to_xgboost_model(model,config):
@@ -237,11 +269,11 @@ def convert(model, config):
     def print_logs(function,model,config,framework_name):
         border = '-'*30
         print(border)
-        print(f'Converting model to {framework_name}...')
+        print(f'Converting model to {DATASET} {MODEL} {framework_name} {config["num_trees"]}...')
         print(border)
         function(model,config)
         print(border)
-        print(f'Converted model to {framework_name}')
+        print(f'Converted model to {DATASET} {MODEL} {framework_name} {config["num_trees"]}')
         print(border + '\n\n')
 
     frameworks = FRAMEWORKS.lower().split(",")
