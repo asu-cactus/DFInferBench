@@ -59,7 +59,7 @@ def convert_to_pytorch_model(model, config):
     pytorch_time_start = time.time()
     save_time = calculate_time(pytorch_time_start, pytorch_time_start)
     print(f"Time Taken to save HummingbirdPyTorch: {save_time}")
-    print(f"Total time: {convert_time + save_time}")
+    print(f"{DATASET} {MODEL} pytorch {config['num_trees']} total time: {convert_time + save_time}")
 
 def convert_to_torch_model(model, config):
     import hummingbird.ml as hml
@@ -75,7 +75,7 @@ def convert_to_torch_model(model, config):
     torch_time_end = time.time()
     save_time = calculate_time(torch_time_start, torch_time_end)
     print(f"Time taken to save torch model {save_time}")
-    print(f"Total time: {convert_time + save_time}")
+    print(f"{DATASET} {MODEL} torch {config['num_trees']} total time: {convert_time + save_time}")
 
 def convert_to_tf_df_model(model, config):
     # Converting to TF-DF model
@@ -96,7 +96,7 @@ def convert_to_tf_df_model(model, config):
         tfdf_time_end = time.time()
         save_time = calculate_time(tfdf_time_start, tfdf_time_end)
         print(f"Time taken to save tfdf randomforest model {save_time}")
-        print(f"Total time: {convert_time + save_time}")
+
     elif MODEL == "xgboost":
         tfdf_time_start = time.time()
         tensorflow_model = xgb2tfdf_converter.convert(model, intermediate_write_path="intermediate_path",)
@@ -110,10 +110,10 @@ def convert_to_tf_df_model(model, config):
         tfdf_time_end = time.time()
         save_time = calculate_time(tfdf_time_start, tfdf_time_end)
         print(f"Time taken to save tfdf xgboost model {save_time}")
-        print(f"Total time: {convert_time + save_time}")
-
+    
     else:
         raise ValueError(f"lightgbm is currently not supported for tf-df.")
+    print(f"{DATASET} {MODEL} tf-df {config['num_trees']} total time: {convert_time + save_time}")
 
     
 
@@ -163,7 +163,7 @@ def convert_to_onnx_model(model, config):
         save_time = calculate_time(onnx_write_time_start, onnx_write_time_end)
         print(f"Time taken to write onnx model: {save_time}")
 
-    print(f"Total time: {convert_time + save_time}")
+    print(f"{DATASET} {MODEL} onnx {config['num_trees']} total time: {convert_time + save_time}")
 
 def convert_to_treelite_model(model, config):
     import treelite
@@ -184,7 +184,7 @@ def convert_to_treelite_model(model, config):
     treelite_time_end = time.time()
     save_time = calculate_time(treelite_time_start, treelite_time_end)
     print(f"Time taken to write treelite model: {save_time}")
-    print(f"Total time: {convert_time + save_time}")
+    print(f"{DATASET} {MODEL} treelite {config['num_trees']} total time: {convert_time + save_time}")
 
 
 def convert_to_lleaves_model(model, config):
@@ -201,7 +201,7 @@ def convert_to_lleaves_model(model, config):
         lleaves_model.compile(cache=model_cache_path)  # NOTE: Same logic to be used for testing. This time, the elf file is loaded instead of compiled.
         lleaves_end_time = time.time()
         total_time = calculate_time(lleaves_start_time, lleaves_end_time)
-        print(f"Total time: {total_time}")
+        print(f"{DATASET} {MODEL} lleaves {config['num_trees']} total time: {convert_time + save_time}")
     else:
         print(f"LLeaves is only supported for LightGBM at the moment. Does not support {MODEL}.")
 
@@ -243,7 +243,7 @@ def convert_to_netsdb_model(model, config):
         #         f.write(str(data))
     end_time = time.time()
     total_time = calculate_time(start_time, end_time)
-    print(f"Total time: {total_time}")
+    print(f"{DATASET} {MODEL} netsdb {config['num_trees']} total time: {convert_time + save_time}")
         
 
 def convert_to_xgboost_model(model,config):
