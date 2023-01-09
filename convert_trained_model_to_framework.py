@@ -201,7 +201,7 @@ def convert_to_lleaves_model(model, config):
         lleaves_model.compile(cache=model_cache_path)  # NOTE: Same logic to be used for testing. This time, the elf file is loaded instead of compiled.
         lleaves_end_time = time.time()
         total_time = calculate_time(lleaves_start_time, lleaves_end_time)
-        print(f"{DATASET} {MODEL} lleaves {config['num_trees']} total time: {convert_time + save_time}")
+        print(f"{DATASET} {MODEL} lleaves {config['num_trees']} total time: {total_time}")
     else:
         print(f"LLeaves is only supported for LightGBM at the moment. Does not support {MODEL}.")
 
@@ -243,7 +243,7 @@ def convert_to_netsdb_model(model, config):
         #         f.write(str(data))
     end_time = time.time()
     total_time = calculate_time(start_time, end_time)
-    print(f"{DATASET} {MODEL} netsdb {config['num_trees']} total time: {convert_time + save_time}")
+    print(f"{DATASET} {MODEL} netsdb {config['num_trees']} total time: {total_time}")
         
 
 def convert_to_xgboost_model(model,config):
