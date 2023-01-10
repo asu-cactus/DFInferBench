@@ -19,7 +19,7 @@ import os
 import tempfile
 from typing import Any, Dict, List, Optional, TypeVar, Union
 
-from xgboost import XGBClassifier
+from xgboost import XGBClassifier, XGBRegressor
 import tensorflow as tf
 import tensorflow_decision_forests as tfdf
 
@@ -79,19 +79,26 @@ def convert(
 
 
 def build_tfdf_model(
-    xgboost_model: XGBClassifier,
+    xgboost_model: Union[XGBClassifier, XGBRegressor],
     path: os.PathLike,
 ) -> tf.keras.Model:
   """Converts a XGBoost model into a TFDF model."""
   bias = 0.0
 
-  gbt_builder = tfdf.builder.GradientBoostedTreeBuilder(  # TODO: Understand this, and see the same implementation for LightGBM.
-      path=path,
-      objective=tfdf.py_tree.objective.ClassificationObjective(label="label",
-          classes=[str(c) for c in xgboost_model.classes_],
-      ),
-      bias=bias,
-  )
+  if isinstance(xgboost_model, XGBClassifier):
+    gbt_builder = tfdf.builder.GradientBoostedTreeBuilder(  # TODO: Understand this, and see the same implementation for LightGBM.
+        path=path,
+        objective=tfdf.py_tree.objective.ClassificationObjective(label="label",
+            classes=[str(c) for c in xgboost_model.classes_],
+        ),
+        bias=bias,
+    )
+  elif isinstance(xgboost_model, XGBRegressor):
+        gbt_builder = tfdf.builder.GradientBoostedTreeBuilder(  # TODO: Understand this, and see the same implementation for LightGBM.
+        path=path,
+        objective=tfdf.py_tree.objective.RegressionObjective(label="label"),
+        bias=bias,
+    )
 
   js_trees = get_trees(xgboost_model)
 
