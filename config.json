@@ -1,6 +1,4 @@
 {
-    "num_trees": 1600,
-    "depth": 8,
     "pgsqlconfig": {
         "host": "localhost",
         "port": "5432",

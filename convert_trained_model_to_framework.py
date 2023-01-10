@@ -24,9 +24,17 @@ def parse_arguments(config):
         help="Model name. Choose from ['randomforest', 'xgboost', 'lightgbm']")
     parser.add_argument("-f", "--frameworks", required=True, type=str,
         help="Zero to multiple values from ['pytorch', 'torch', 'tf-df', 'onnx', 'treelite', 'lleaves', 'netsdb', 'xgboost', 'lightgbm'], seperated by ','")
-    parser.add_argument("-t", "--num_trees", type=int, default=10,
-        help="Number of trees for the model")
+    parser.add_argument(
+        "-t", "--num_trees", type=int, default=10,
+        choices=[10, 500, 1600],
+        help="Number of trees in the model. Choose from ['10', '500', '1600']")
+    parser.add_argument(
+        "-D", "--depth", type=int, default=8,
+        choices=[6, 8],
+        help="Choose from [6, 8].")
     args = parser.parse_args()
+    config['depth'] = args.depth
+    config['num_trees'] = args.num_trees
     if args.dataset:
         DATASET = args.dataset.lower()
     if args.model:
@@ -37,8 +45,6 @@ def parse_arguments(config):
             if framework not in framework_options:
                 raise ValueError(f"Framework {framework} is not supported. Choose from ['pytorch', 'torch', 'tf-df', 'onnx', 'treelite', 'lleaves', 'netsdb', 'xgboost', 'lightgbm']")
         FRAMEWORKS = args.frameworks  # TODO: Better to store these as a List? Instead of as a string.
-    if args.num_trees:
-        config["num_trees"] = args.num_trees
     check_argument_conflicts(args)  # TODO: Maybe, this is good to do it at the beginning of function itself?
     print(f"DATASET: {DATASET}")
     print(f"MODEL: {MODEL}")

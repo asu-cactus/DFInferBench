@@ -35,13 +35,18 @@ def parse_arguments(config):
         help="Model name. Choose from ['randomforest', 'xgboost', 'lightgbm']")
     parser.add_argument("--gpu", action="store_true", help="Whether or not use gpu to accelerate xgboost training.")
     parser.add_argument(
-        "-D", "--depth", type=int,
-        choices=[8],
-        help="Depth of trees[Optional default is 8]. Choose from [8].")
-    parser.add_argument("-t", "--num_trees", type=int, choices=[10, 500, 1600],
-                        help="Number of trees for the model. Choose from ['10', '500', '1600']")
+        "-t", "--num_trees", type=int, default=10,
+        choices=[10, 500, 1600],
+        help="Number of trees in the model. Choose from ['10', '500', '1600']")
+    parser.add_argument(
+        "-D", "--depth", type=int, default=8,
+        choices=[6, 8],
+        help="Depth of trees[Optional default is 8]. Choose from [6, 8].")
 
     args = parser.parse_args()
+    DEPTH = args.depth
+    config['depth'] = args.depth
+    config['num_trees'] = args.num_trees
     if args.dataset:
         DATASET = args.dataset
     if args.model:
@@ -49,9 +54,6 @@ def parse_arguments(config):
     if args.num_trees:
         TREES = args.num_trees
         config["num_trees"] = args.num_trees
-    if args.depth:
-        DEPTH = args.depth
-        config["depth"] = args.depth
     if args.gpu:
         GPU = True
 

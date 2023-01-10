@@ -45,13 +45,13 @@ def parse_arguments(config):
         choices=['randomforest', 'xgboost', 'lightgbm'],
         help="Model name. Choose from ['randomforest', 'xgboost', 'lightgbm']")
     parser.add_argument(
-        "-t", "--num_trees", type=int,
+        "-t", "--num_trees", type=int, default=10,
         choices=[10, 500, 1600],
         help="Number of trees in the model. Choose from ['10', '500', '1600']")
     parser.add_argument(
         "-D", "--depth", type=int, default=8,
-        choices=[8],
-        help="Depth of trees[Optional default is 8]. Choose from [8].")
+        choices=[6, 8],
+        help="Depth of trees[Optional default is 8]. Choose from [6, 8].")
     parser.add_argument(
         "-f", "--frameworks", required=True, type=str,
         choices=[
@@ -80,6 +80,8 @@ def parse_arguments(config):
                         help="Number of threads for testing.")
     args = parser.parse_args()
     config['threads'] = args.threads if args.threads else -1
+    config['depth'] = args.depth
+    config['num_trees'] = args.num_trees
     check_argument_conflicts(args)
     if args.dataset:
         DATASET = args.dataset
