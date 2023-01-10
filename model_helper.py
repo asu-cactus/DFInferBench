@@ -82,11 +82,11 @@ def fetch_data(dataset, config, suffix, time_consume=None):
 #     return np_data
 
 
-def convert_to_hummingbird_model(model, backend, test_data, batch_size, device):
+def convert_to_hummingbird_model(model, backend, test_data, batch_size, device, nthreads):
     from hummingbird.ml import constants
     from hummingbird.ml import convert, convert_batch
     remainder_size = test_data.shape[0] % batch_size
-    extra_config = {constants.N_THREADS: os.cpu_count()}
+    extra_config = {constants.N_THREADS: os.cpu_count() if nthreads == -1 else nthreads}
     batch_data = None
     batch_data = test_data[0:batch_size]
     if backend == "tvm":

@@ -13,9 +13,9 @@ warnings.filterwarnings('ignore')
 
 
 # Default arguments
-DATASET = "higgs"
-MODEL = "xgboost"
-FRAMEWORK = "Sklearn"
+DATASET = None
+MODEL = None
+FRAMEWORK = None
 
 
 def parse_arguments(config):
@@ -27,7 +27,7 @@ def parse_arguments(config):
         For other platforms, both QUERY_SIZE and BATCH_SIZE will be used.
     """)
     parser.add_argument(
-        "-d", "--dataset", type=str, 
+        "-d", "--dataset", required=True, type=str, 
         choices=[
             'higgs', 
             'airline_regression', 
@@ -41,7 +41,7 @@ def parse_arguments(config):
             'tpcxai_fraud'],
         help="Dataset to be tested.")
     parser.add_argument(
-        "-m", "--model", type=str,
+        "-m", "--model", required=True, type=str,
         choices=['randomforest', 'xgboost', 'lightgbm'],
         help="Model name. Choose from ['randomforest', 'xgboost', 'lightgbm']")
     parser.add_argument(
@@ -49,11 +49,11 @@ def parse_arguments(config):
         choices=[10, 500, 1600],
         help="Number of trees in the model. Choose from ['10', '500', '1600']")
     parser.add_argument(
-        "-D", "--depth", type=int,
+        "-D", "--depth", type=int, default=8,
         choices=[8],
         help="Depth of trees[Optional default is 8]. Choose from [8].")
     parser.add_argument(
-        "-f", "--frameworks", type=str,
+        "-f", "--frameworks", required=True, type=str,
         choices=[
             'Sklearn',
             'TreeLite',
@@ -76,7 +76,10 @@ def parse_arguments(config):
                         help="Batch size for testing. For Sklearn, TreeLite, ONNX, batch_size will not be used.")
     parser.add_argument("--query_size", type=int,
                         help="Query size for testing.")
+    parser.add_argument("--threads", type=int,
+                        help="Number of threads for testing.")
     args = parser.parse_args()
+    config['threads'] = args.threads if args.threads else -1
     check_argument_conflicts(args)
     if args.dataset:
         DATASET = args.dataset
@@ -101,6 +104,9 @@ def parse_arguments(config):
     print(f"FRAMEWORK: {FRAMEWORK}")
     print(f"Query Size: {args.query_size}")
     print(f"Batch Size: {args.batch_size}")
+    print(f"Trees: {config['num_trees']}")
+    print(f"Depth: {args.depth}")
+    print(f"Threads: {config['threads']}")
     return args
 
 
@@ -126,7 +132,10 @@ def load_sklearn_model(config, time_consume):
         "models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.pkl")
     sklearnmodel = joblib.load(relative_path)
     sklearnmodel.set_params(verbose=0)
-    sklearnmodel.set_params(n_jobs=-1)
+    sklearnmodel.set_params(n_jobs=config['threads'])
+    if MODEL == 'xgboost': #TODO: current code can not make lightgbm run on custom nthreads
+        nthread = config['threads'] if config['threads'] != -1 else os.cpu_count()
+        sklearnmodel.set_params(nthread=nthread)
     load_time = time.time()
     sklearnmodel_loading_time = calculate_time(start_time, load_time)
     time_consume["sklearn loading time"] = sklearnmodel_loading_time
@@ -156,7 +165,10 @@ def test_cpu(args, features, label, sklearnmodel, config, time_consume):
         start_time = time.time()
         libpath = relative2abspath(
             "models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}.so")
-        predictor = treelite_runtime.Predictor(libpath, verbose=True)
+        if config['threads'] == -1:
+            predictor = treelite_runtime.Predictor(libpath, verbose=True)
+        else:
+            predictor = treelite_runtime.Predictor(libpath, verbose=True, nthread=config['threads'])
         conversion_time = calculate_time(start_time, time.time())
         results = run_inference(FRAMEWORK, features, input_size, args.query_size, predictor.predict, time_consume, is_classification)
         write_data(FRAMEWORK, results, time_consume)
@@ -189,11 +201,11 @@ def test_cpu(args, features, label, sklearnmodel, config, time_consume):
         assert args.batch_size == args.query_size, "For TVM, batch_size must be equivalent to query_size"
         start_time = time.time()
         model = convert_to_hummingbird_model(
-            sklearnmodel, "tvm", features, args.batch_size, "cpu")
+            sklearnmodel, "tvm", features, args.batch_size, "cpu", config['threads'])
         remainder_size = input_size % args.batch_size
         if remainder_size > 0:
             remainder_model = convert_to_hummingbird_model(
-                sklearnmodel, "tvm", features, remainder_size, "cpu")
+                sklearnmodel, "tvm", features, remainder_size, "cpu", config['threads'])
         conversion_time = calculate_time(start_time, time.time())
 
         def predict(batch, use_remainder_model):
@@ -231,7 +243,7 @@ def test_cpu(args, features, label, sklearnmodel, config, time_consume):
         import onnxruntime as rt
         # https://github.com/microsoft/onnxruntime-openenclave/blob/openenclave-public/docs/ONNX_Runtime_Perf_Tuning.md
         sess_opt = rt.SessionOptions()
-        sess_opt.intra_op_num_threads = os.cpu_count()
+        sess_opt.intra_op_num_threads = os.cpu_count() if config['threads'] == -1 else config['threads']
         sess_opt.execution_mode = rt.ExecutionMode.ORT_SEQUENTIAL
         start_time = time.time()
         relative_path = relative2abspath(
@@ -443,14 +455,7 @@ if __name__ == "__main__":
     print("\n\n\n==============EXPERIMENT STARTING=========================")
     config = json.load(open(relative2abspath("config.json")))
     args = parse_arguments(config)
-    if args.num_trees:
-        config['num_trees'] = args.num_trees
 
-    if args.depth:
-        config['depth'] = args.depth
-
-    print("Trees", config['num_trees'])
-    print("Depth", config['depth'])
     time_consume = {
         "query size": args.query_size,
         "batch_size": args.batch_size,
