@@ -88,10 +88,12 @@ def convert_to_tf_df_model(model, config):
     import tensorflow as tf
     import external.scikit_learn_model_converter as sk2tfdf_converter  # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
     import xgboost_model_converter as xgb2tfdf_converter # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
+    import shutil
 
+    intermediate_write_path="intermediate_path"
     if MODEL == "randomforest":
         tfdf_time_start = time.time()
-        tensorflow_model = sk2tfdf_converter.convert(model,  intermediate_write_path="intermediate_path", )
+        tensorflow_model = sk2tfdf_converter.convert(model,  intermediate_write_path=intermediate_write_path)
         tfdf_time_end = time.time()
         convert_time = calculate_time(tfdf_time_start, tfdf_time_end)
         print(f"Time taken to convert tfdf randomforest model {convert_time}")
@@ -105,7 +107,7 @@ def convert_to_tf_df_model(model, config):
 
     elif MODEL == "xgboost":
         tfdf_time_start = time.time()
-        tensorflow_model = xgb2tfdf_converter.convert(model, intermediate_write_path="intermediate_path",)
+        tensorflow_model = xgb2tfdf_converter.convert(model, intermediate_write_path=intermediate_write_path)
         tfdf_time_end = time.time()
         convert_time = calculate_time(tfdf_time_start, tfdf_time_end)
         print(f"Time taken to convert tfdf xgboost model {convert_time}")
@@ -120,6 +122,8 @@ def convert_to_tf_df_model(model, config):
     else:
         raise ValueError(f"lightgbm is currently not supported for tf-df.")
     print(f"{DATASET} {MODEL} tf-df {config['num_trees']} total time: {convert_time + save_time}")
+    # Clean up
+    shutil.rmtree(intermediate_write_path)
 
     
 
