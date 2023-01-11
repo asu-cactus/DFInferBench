@@ -224,13 +224,15 @@ def test_cpu(args, features, label, sklearnmodel, config, time_consume):
         import tensorflow_decision_forests as tfdf
         import external.scikit_learn_model_converter as scikit_learn_model_converter
         import xgboost_model_converter
+        import shutil
+        intermediate_write_path="intermediate_path"
         start_time = time.time()
         if MODEL == "randomforest":
             model = scikit_learn_model_converter.convert(
-                sklearnmodel, intermediate_write_path="intermediate_path", )
+                sklearnmodel, intermediate_write_path=intermediate_write_path)
         else:
             model = xgboost_model_converter.convert(
-                sklearnmodel, intermediate_write_path="intermediate_path", )
+                sklearnmodel, intermediate_write_path=intermediate_write_path)
         conversion_time = calculate_time(start_time, time.time())
 
         def predict(batch):
@@ -240,6 +242,8 @@ def test_cpu(args, features, label, sklearnmodel, config, time_consume):
         results = run_inference(FRAMEWORK, features, input_size, args.query_size, predict, time_consume, is_classification)
         write_data(FRAMEWORK, results, time_consume)
         total_framework_time = calculate_time(start_time, time.time())
+        # Clean up
+        shutil.rmtree(intermediate_write_path)
 
     elif FRAMEWORK == "ONNXCPU":
         import onnxruntime as rt
