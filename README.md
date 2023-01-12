@@ -345,22 +345,39 @@ python train_model.py -d higgs -m randomforest --num_trees 10
 python train_model.py -d higgs -m xgboost --num_trees 10
 python train_model.py -d higgs -m lightgbm --num_trees 10
 
-python convert_trained_model_to_framework.py -d higgs -m randomforest -f pytorch,torch,onnx,treelite,tf-df,onnx,netsdb --num_trees 10
-python convert_trained_model_to_framework.py -d higgs -m xgboost -f pytorch,torch,onnx,treelite,tf-df,netsdb --num_trees 10
-python convert_trained_model_to_framework.py -d higgs -m lightgbm -f pytorch,torch,onnx,treelite,lightgbm,lleaves,netsdb --num_trees 10
+python convert_trained_model_to_framework.py -d higgs -m randomforest -f onnx,treelite,tf-df,netsdb --num_trees 10
+python convert_trained_model_to_framework.py -d higgs -m xgboost -f onnx,treelite,tf-df,netsdb --num_trees 10
+python convert_trained_model_to_framework.py -d higgs -m lightgbm -f onnx,treelite,lleaves,netsdb --num_trees 10
 
 python test_model.py -d higgs -m xgboost -f TreeLite --batch_size 1000 --query_size 1000 --num_trees 10
 or modify and run run_test.sh
 nohup ./run_test.sh &> ./results/test_output.txt &
 ```
 
-Get CPU Usage
+### Single thread experiments
+
+Add `threads` argument to `python test_model.py`, for example, 
+```
+python test_model.py -d higgs -m xgboost -f TreeLite --batch_size 100000 --query_size 100000 --num_trees 10 --threads 1
+```
+
+To run Yggdrasil, which implements QuickScorer algorithm, first download the binaries from https://github.com/google/yggdrasil-decision-forests/releases to a separate directory and unzip it. Next, put the dataset and model to the right place. Yggdrasil requires the dataset has a header to generate meta data, which you don't need to care much about, but you should manually add a header to the first line of the dataset. For example, add a header to the fraud dataset, run 
+```
+sed -i '1i feature_0,feature_1,feature_2,feature_3,feature_4,feature_5,feature_6,feature_7,feature_8,feature_9,feature_10,feature_11,feature_12,feature_13,feature_14,feature_15,feature_16,feature_17,feature_18,feature_19,feature_20,feature_21,feature_22,feature_23,feature_24,feature_25,feature_26,feature_27,label' datasets/creditcard_test.csv
+```
+Then run the benchmark:
+```
+./benchmark_inference --dataset=csv:datasets/creditcard_test.csv --model=models/fraud_xgboost_500_6_tfdf/assets/ --generic=false --num_runs=1 --batch_size=56962
+```
+
+### Get CPU Usage
 
 ```
 echo "CPU Usage: "$[100-$(vmstat 1 2|tail -1|awk '{print $15}')]"%"
 ```
 
-GPU Environment Setup
+
+### GPU Environment Setup
 
 g2dn.2xlarge, with Deep Learning AMI GPU PyTorch 1.12.0 (Ubuntu 20.04) 20220817 AMI ( ami-0f5b2957914692f92)
 
