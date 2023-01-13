@@ -180,7 +180,7 @@ def test_cpu(args, features, label, sklearnmodel, config, time_consume):
     elif FRAMEWORK == "HummingbirdPytorchCPU":
         start_time = time.time()
         model = convert_to_hummingbird_model(
-            sklearnmodel, "torch", features, args.batch_size, "cpu")
+            sklearnmodel, "torch", features, args.batch_size, "cpu", config['threads'])
         conversion_time = calculate_time(start_time, time.time())
         results = run_inference(FRAMEWORK, features, input_size, args.query_size, model.predict, time_consume, is_classification)
         write_data(FRAMEWORK, results, time_consume)
@@ -189,7 +189,7 @@ def test_cpu(args, features, label, sklearnmodel, config, time_consume):
     elif FRAMEWORK == "HummingbirdTorchScriptCPU":
         start_time = time.time()
         model = convert_to_hummingbird_model(
-            sklearnmodel, "torch.jit", features, args.batch_size, "cpu")
+            sklearnmodel, "torch.jit", features, args.batch_size, "cpu", config['threads'])
         conversion_time = calculate_time(start_time, time.time())
 
         def predict(batch):
@@ -326,7 +326,7 @@ def test_gpu(args, features, label, sklearnmodel, config, time_consume):
         relative_path = relative2abspath(
             "models", f"{DATASET}_{MODEL}_{config['num_trees']}_{config['depth']}_torch.pkl")
         model = convert_to_hummingbird_model(
-            sklearnmodel, "torch", features, args.batch_size, "cuda")
+            sklearnmodel, "torch", features, args.batch_size, "cuda", config['threads'])
         conversion_time = calculate_time(start_time, time.time())
         results = run_inference(FRAMEWORK, features, input_size, args.query_size, model.predict, time_consume, is_classification)
         write_data(FRAMEWORK, results, time_consume)
@@ -369,11 +369,11 @@ def test_gpu(args, features, label, sklearnmodel, config, time_consume):
         assert args.batch_size == args.query_size, "For TVM, batch_size must be equivalent to query_size"
         start_time = time.time()
         model = convert_to_hummingbird_model(
-            sklearnmodel, "tvm", features, args.batch_size, "cuda")
+            sklearnmodel, "tvm", features, args.batch_size, "cuda", config['threads'])
         remainder_size = input_size % args.batch_size
         if remainder_size > 0:
             remainder_model = convert_to_hummingbird_model(
-                sklearnmodel, "tvm", features, remainder_size, "cuda")
+                sklearnmodel, "tvm", features, remainder_size, "cuda", config['threads'])
         conversion_time = calculate_time(start_time, time.time())
 
         def predict(batch, use_remainder_model):

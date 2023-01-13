@@ -50,25 +50,18 @@ case $DATASET in
 esac
 
 
-for MODEL in $MODELS
-    do 
-    for FRAMEWORK in $FRAMEWORKS
-        do
-        for BATCHSIZE in $BATCHSIZES
-            do 
-            if [ "$MODEL $FRAMEWORK" != "randomforest TreeLite" ]
-                then
-
-                if [ $FRAMEWORK == "TFDF" ]
+for MODEL in $MODELS; do 
+    for FRAMEWORK in $FRAMEWORKS; do
+        for BATCHSIZE in $BATCHSIZES; do 
+            if [ $FRAMEWORK == "TFDF" ]
                 then 
                     QUERYSIZE=$TESTSIZE
                 else
                     QUERYSIZE=$BATCHSIZE
-                fi
-                echo "python test_model.py -d $DATASET -m $MODEL -f $FRAMEWORK --batch_size $BATCHSIZE --query_size $QUERYSIZE --num_trees $TREES"
-                python test_model.py -d $DATASET -m $MODEL -f $FRAMEWORK --batch_size $BATCHSIZE --query_size $QUERYSIZE --num_trees $TREES
-                echo -e "\n\n"
             fi
+            echo "python test_model.py -d $DATASET -m $MODEL -f $FRAMEWORK --batch_size $BATCHSIZE --query_size $QUERYSIZE --num_trees $TREES"
+            python test_model.py -d $DATASET -m $MODEL -f $FRAMEWORK --batch_size $BATCHSIZE --query_size $QUERYSIZE --num_trees $TREES
+            echo -e "\n\n" 
         done
     done
 done

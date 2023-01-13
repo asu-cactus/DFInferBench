@@ -44,12 +44,9 @@ case $DATASET in
 esac
 
 
-for MODEL in $MODELS
-    do 
-    for FRAMEWORK in $FRAMEWORKS
-        do
-        for BATCHSIZE in $BATCHSIZES
-            do 
+for MODEL in $MODELS; do 
+    for FRAMEWORK in $FRAMEWORKS; do
+        for BATCHSIZE in $BATCHSIZES; do 
             if [ $FRAMEWORK == "TFDF" ]
                 then 
                     QUERYSIZE=$TESTSIZE
