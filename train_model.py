@@ -11,15 +11,13 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-DATASET = "airline_classification"
-MODEL = "xgboost"
-TREES = None
-DEPTH = None
-GPU = False
+DATASET = None
+MODEL = None
+
 def parse_arguments(config):
-    global DATASET, MODEL, GPU
+    global DATASET, MODEL
     parser = argparse.ArgumentParser(description='Arguments for train_model.')
-    parser.add_argument("-d", "--dataset", type=str, choices=[
+    parser.add_argument("-d", "--dataset", required=True,  type=str, choices=[
         'higgs', 
         'airline_regression', 
         'airline_classification', 
@@ -31,35 +29,28 @@ def parse_arguments(config):
         'criteo',
         'tpcxai_fraud'],
         help="Dataset to be trained. Choose from ['higgs', 'airline_regression', 'airline_classification', 'fraud', 'year', 'epsilon', 'bosch', 'covtype']")
-    parser.add_argument("-m", "--model", type=str, choices=['randomforest', 'xgboost', 'lightgbm'],
+    parser.add_argument("-m", "--model", required=True, type=str, choices=['randomforest', 'xgboost', 'lightgbm'],
         help="Model name. Choose from ['randomforest', 'xgboost', 'lightgbm']")
     parser.add_argument("--gpu", action="store_true", help="Whether or not use gpu to accelerate xgboost training.")
     parser.add_argument(
         "-t", "--num_trees", type=int, default=10,
-        choices=[10, 500, 1600],
-        help="Number of trees in the model. Choose from ['10', '500', '1600']")
+        help="Number of trees in the model. [Default value is 10]")
     parser.add_argument(
         "-D", "--depth", type=int, default=8,
-        choices=[6, 8],
-        help="Depth of trees[Optional default is 8]. Choose from [6, 8].")
+        help="Depth of trees [Default value is 8].")
 
     args = parser.parse_args()
-    DEPTH = args.depth
     config['depth'] = args.depth
     config['num_trees'] = args.num_trees
-    if args.dataset:
-        DATASET = args.dataset
-    if args.model:
-        MODEL = args.model
-    if args.num_trees:
-        TREES = args.num_trees
-        config["num_trees"] = args.num_trees
-    if args.gpu:
-        GPU = True
+    config["use_gpu"] = args.gpu
 
+    DATASET = args.dataset
+    MODEL = args.model
+    
     check_argument_conflicts(args)
     print(f"DATASET: {DATASET}")
     print(f"MODEL: {MODEL}")
+    print(f"Use GPU: {args.gpu}")
     return args
 
 def train(config, train_data):
@@ -107,7 +98,7 @@ def train(config, train_data):
             n_estimators=config["num_trees"],
             max_leaves=256,
             learning_rate=0.1,
-            tree_method="gpu_hist" if GPU else "hist",
+            tree_method="gpu_hist" if config['use_gpu'] else "hist",
             reg_lambda=1,
             verbosity=0,
             n_jobs=-1,

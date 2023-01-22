@@ -26,25 +26,21 @@ def parse_arguments(config):
         help="Zero to multiple values from ['pytorch', 'torch', 'tf-df', 'onnx', 'treelite', 'lleaves', 'netsdb', 'xgboost', 'lightgbm'], seperated by ','")
     parser.add_argument(
         "-t", "--num_trees", type=int, default=10,
-        choices=[10, 500, 1600],
-        help="Number of trees in the model. Choose from ['10', '500', '1600']")
+        help="Number of trees in the model. [Default value is 10]")
     parser.add_argument(
         "-D", "--depth", type=int, default=8,
-        choices=[6, 8],
-        help="Choose from [6, 8].")
+        help="Depth of trees [Default value is 8].")
     args = parser.parse_args()
     config['depth'] = args.depth
     config['num_trees'] = args.num_trees
-    if args.dataset:
-        DATASET = args.dataset.lower()
-    if args.model:
-        MODEL = args.model.lower()
-    if args.frameworks:
-        framework_options = ['pytorch', 'torch', 'tf-df', 'onnx', 'treelite', 'lleaves', 'netsdb', 'xgboost', 'lightgbm']
-        for framework in args.frameworks.lower().split(","):
-            if framework not in framework_options:
-                raise ValueError(f"Framework {framework} is not supported. Choose from ['pytorch', 'torch', 'tf-df', 'onnx', 'treelite', 'lleaves', 'netsdb', 'xgboost', 'lightgbm']")
-        FRAMEWORKS = args.frameworks  # TODO: Better to store these as a List? Instead of as a string.
+    DATASET = args.dataset.lower()
+    MODEL = args.model.lower()
+
+    framework_options = ['pytorch', 'torch', 'tf-df', 'onnx', 'treelite', 'lleaves', 'netsdb', 'xgboost', 'lightgbm']
+    for framework in args.frameworks.lower().split(","):
+        if framework not in framework_options:
+            raise ValueError(f"Framework {framework} is not supported. Choose from ['pytorch', 'torch', 'tf-df', 'onnx', 'treelite', 'lleaves', 'netsdb', 'xgboost', 'lightgbm']")
+    FRAMEWORKS = args.frameworks  # TODO: Better to store these as a List? Instead of as a string.
     check_argument_conflicts(args)  # TODO: Maybe, this is good to do it at the beginning of function itself?
     print(f"DATASET: {DATASET}")
     print(f"MODEL: {MODEL}")
