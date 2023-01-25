@@ -4,6 +4,8 @@ import os
 import numpy as np
 import math
 from sklearn.metrics import classification_report, mean_squared_error
+from hummingbird.ml import constants
+from hummingbird.ml import convert, convert_batch
 
 dataset_folder = "dataset/"
 
@@ -83,18 +85,15 @@ def fetch_data(dataset, config, suffix, time_consume=None):
 
 
 def convert_to_hummingbird_model(model, backend, test_data, batch_size, device, nthreads):
-    from hummingbird.ml import constants
-    from hummingbird.ml import convert, convert_batch
-    # remainder_size = test_data.shape[0] % batch_size
+    remainder_size = test_data.shape[0] % batch_size
     extra_config = {constants.N_THREADS: os.cpu_count() if nthreads == -1 else nthreads}
-    batch_data = None
     batch_data = test_data[0:batch_size]
     if backend == "tvm":
         model = convert(model, backend, batch_data,
                         device=device, extra_config=extra_config)
     else:
-        model = convert_batch(model, backend, batch_data, batch_size,
-                              batch_size, device=device, extra_config=extra_config)
+        model = convert_batch(model, backend, batch_data, remainder_size=remainder_size,
+                              device=device, extra_config=extra_config)
     return model
 
 def run_inference(framework, features, input_size, query_size, predict, time_consume, is_classification):
