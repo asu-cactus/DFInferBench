@@ -198,11 +198,11 @@ def test_cpu(features, label, sklearnmodel, config, time_consume):
         start_time = time.time()
         model = convert_to_hummingbird_model(
             sklearnmodel, "tvm", features, batch_size, "cpu", config['threads'])
+        conversion_time = calculate_time(start_time, time.time())
         remainder_size = input_size % batch_size
         if remainder_size > 0:
             remainder_model = convert_to_hummingbird_model(
                 sklearnmodel, "tvm", features, remainder_size, "cpu", config['threads'])
-        conversion_time = calculate_time(start_time, time.time())
 
         def predict(batch, use_remainder_model):
             if use_remainder_model:
@@ -365,12 +365,12 @@ def test_gpu(features, label, sklearnmodel, config, time_consume):
         start_time = time.time()
         model = convert_to_hummingbird_model(
             sklearnmodel, "tvm", features, batch_size, "cuda", config['threads'])
+        conversion_time = calculate_time(start_time, time.time())
         remainder_size = input_size % batch_size
         if remainder_size > 0:
             remainder_model = convert_to_hummingbird_model(
                 sklearnmodel, "tvm", features, remainder_size, "cuda", config['threads'])
-        conversion_time = calculate_time(start_time, time.time())
-
+        
         def predict(batch, use_remainder_model):
             if use_remainder_model:
                 return remainder_model.predict(batch)
