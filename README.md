@@ -4,154 +4,72 @@ We provide a comprehensive benchmark framework for decision forest model inferen
 
 The framework covers three algorithms: RandomForest, XGBoost, and LightGBM. 
 
-The framework supports most of the popular decision forest inference platforms, including Scikit-Learn, XGBoost, LightGBM, ONNX, HummingBird, TreeLite, lleaves, TensorFlow TFDF, cu-ml, and so on.
+The framework supports most of the popular decision forest inference platforms, including Scikit-Learn, XGBoost, LightGBM, ONNX, HummingBird, TreeLite, lleaves, TensorFlow TFDF, cu-ml, and FIL.
 
-The framework also supports multiple well-known workloads, including Higgs, Airline, Fraud, TPCx-AI fraud detection, year, Bosch, Epsilon, Crieto.
+The framework also supports multiple well-known workloads, including Higgs, Airline, TPCx-AI fraud detection, Fraud, Year, Bosch, Epsilon, and Crieto.
 
-# Benchmark Environment Setup
+<!-- toc -->
+- [System requirements](#system-requirements)
+- [Installation](#installation)
+  - [PostgreSQL](#postgresql)
+  - [Platforms and other tools](#platforms-and-other-tools)
+- [Run benchmark](#run-benchmark)
+  - [Platforms with a Python interface](#platforms-with-a-python-interface)
+  - [Single thread experiments](#single-thread-experiments)
+  - [Yggdrasil](#yggdrasil)
+  - [netsDB](#netsdb)
+- [Datasets](#datasets)
+  - [TPCxAI](#generating-synthetic-data-using-tpcxai)
 
-## Python version
-TVM requires Python version >= 3.6 and < 3.9. 
+<!-- tocstop -->
 
-## Benchmark Platforms
+## System requirements
 
-### Scikit-Learn
-
-https://scikit-learn.org/stable/install.html
-
-### ONNX
-
-https://onnxruntime.ai/docs/install/
-
-### TreeLite
-
-https://treelite.readthedocs.io/en/latest/install.html
-
-### HummingBird
-
-https://github.com/microsoft/hummingbird#installation
-
-#### To Use TVM as backend
-
-https://tvm.apache.org/docs/install/from_source.html
-
-
-**There are two ways to build TVM -- build with CMake and buld with conda, see the documents in the above link for details**
-
-If you build TVM with CMake, you may meet error "collect2: fatal error: cannot find ‘ld’", try to change the linker, e.g., you may change 'fuse-ld=lld' to 'fuse-ld=gold' in the ./CMakeFiles/tvm_runtime.dir/link.txt, ./CMakeFiles/tvm.dir/link.txt, and ./CMakeFiles/tvm_allvisible.dir/link.txt.
-
-Remember to run 'make install' from the build directory after successfully compiling tvm to shared libraries.
-
-#### To Use PyTorch/TorchScript as backend
-
-https://pytorch.org/
-
-## Tensorflow
-
-https://www.tensorflow.org/install
-
-## PostgreSQL
-
-https://www.postgresql.org/download/
-
-## ConnectX
-
-https://github.com/sfu-db/connector-x#installation
-
-## XGBoost
-
-pip3 install xgboost
-
-## LightGBM
-
-pip3 install lightgbm
-
-### LLeaves (Model Compiler for LightGBM Model)
-
-pip3 install lleaves (or) conda install -c conda-forge lleaves
-
-## Catboost (This is not a framework. Only used to load the "epsilon" dataset)
-
-pip3 install catboost
-
-
-# Decision Tree Experiments
-
-## Project Setup
-
+## Installation
 ### PostgreSQL
+We used PostgreSQL to manage data for non-netsDB platforms. Please refer to [here](https://www.postgresql.org/download/) to install it. We used the default username and password in our code. Please either leave it as default, or modify the username and password in the `config.json` file.
 
+### Platforms and other tools
+It is recommended to use [conda](https://docs.conda.io/en/latest/miniconda.html) to manage your environment because one of the required package, TVM, is much easier to be installed using `conda`. TVM also recommends a Python version of 3.7.X+ or 3.8.X+, so we also recommend to create a conda virtual environment with Python 3.7 or 3.8. 
+```bash
+conda create -n [env-name] python=3.8
 ```
-#Install tools to download and unzip dataset.
-sudo apt update
-sudo apt install wget gzip bzip2 unzip xz-utils
-wget https://archive.ics.uci.edu/ml/machine-learning-databases/00280/HIGGS.csv.gz
-gzip -d HIGGS.csv.gz
-
-#Install postgres DBMS
-sudo apt install postgresql postgresql-contrib
-
-##The following steps are optional. They show you how to login and create a table/relation.
-##The python script split_data.py will create the
-#Login in
-sudo -i -u postgres
-
-#Run postgres DBMS
-psql
-
-#Default username and password are both "postgres", which are used in our config.json file.
-#In case you want to change the password, you can do the following:
-postgres=# \password postgres
-Enter new password: <new-password>
-
-#Create Table and load
-postgres=# CREATE TABLE higgs(label REAL NOT NULL, leptonpT REAL NOT NULL, leptoneta REAL NOT NULL, leptonphi REAL NOT NULL, missingenergymagnitude REAL NOT NULL, missingenergyphi REAL NOT NULL, jet1pt REAL NOT NULL, jet1eta REAL NOT NULL, jet1phi REAL NOT NULL, jet1btag REAL NOT NULL, jet2pt REAL NOT NULL, jet2eta REAL NOT NULL, jet2phi REAL NOT NULL, jet2btag REAL NOT NULL, jet3pt REAL NOT NULL, jet3eta REAL NOT NULL, jet3phi REAL NOT NULL, jet3btag REAL NOT NULL, jet4pt REAL NOT NULL, jet4eta REAL NOT NULL, jet4phi REAL NOT NULL, jet4btag REAL NOT NULL, mjj REAL NOT NULL, mjjj REAL NOT NULL, mlv REAL NOT NULL, mjlv REAL NOT NULL, mbb REAL NOT NULL, mwbb REAL NOT NULL, mwwbb REAL NOT NULL);
-
-postgres=# copy higgs from 'HIGGS.csv' with CSV;
-
-#Quite postgres DBMS
-postgres=# \q
+Then activate the virtual environment.
+```bash
+conda activate [env-name]
 ```
 
-You must first run split_data.py to split a dataset into training part and testing part, and load both parts to PostgreSQL, which is a prerequisite for running train_model.py and test_model.py.
-
-TO MOUNT THE DRIVE ON EC2
-
-```
-sudo file -s /dev/nvme1n1
-sudo mkfs -t xfs /dev/nvme1n1
-sudo mkdir /mnt/data
-sudo mount /dev/nvme1n1 /mnt/data
-cd /mnt
-sudo chmod 777 data
+Install some useful tools.
+```bash
+sudo apt-get update
+sudo apt-get install -y python3 python3-dev python3-setuptools gcc libtinfo-dev zlib1g-dev build-essential cmake libedit-dev libxml2-dev
 ```
 
-DATASETS
+It is important to install TVM first, because it might uninstall some other packages. We provide an easy way to install TVM in the following code block, which is tested in our environment. For other installation methods and other details, please refer to [here](https://tvm.apache.org/docs/install/from_source.html). 
 
+(Note: If you choose to build TVM with CMake, you may meet error "collect2: fatal error: cannot find ‘ld’", try to change the linker, e.g., you may change 'fuse-ld=lld' to 'fuse-ld=gold' in the ./CMakeFiles/tvm_runtime.dir/link.txt, ./CMakeFiles/tvm.dir/link.txt, and ./CMakeFiles/tvm_allvisible.dir/link.txt.
+Remember to run 'make install' from the build directory after successfully compiling tvm to shared libraries.)
+```bash
+git clone --recursive https://github.com/apache/tvm tvm
+# Update the current conda environment with the dependencies specified by the yaml
+conda env update --file conda/build-environment.yaml
+# Build TVM
+conda build --output-folder=conda/pkg  conda/recipe
+# Run conda/build_cuda.sh to build with cuda enabled
+conda install tvm -c ./conda/pkg
 ```
-#higgs
-wget https://archive.ics.uci.edu/ml/machine-learning-databases/00280/HIGGS.csv.gz
-gzip -d HIGGS.csv.gz
 
-#airline
-wget "http://kt.ijs.si/elena_ikonomovska/datasets/airline/airline_14col.data.bz2"
-bzip2 -dk airline_14col.data.bz2
+Install Nvidia cuML ([here for instructions](https://github.com/rapidsai/cuml/blob/branch-23.02/BUILD.md)) to support Nvidia FIL.
 
-#fraud
-kaggle datasets download mlg-ulb/creditcardfraud -f creditcard.csv.zip
-unzip creditcard.csv.zip
-
-#year
-wget "https://archive.ics.uci.edu/ml/machine-learning-databases/00203/YearPredictionMSD.txt.zip"
-unzip YearPredictionMSD.txt.zip
-
-#epsilon
-wget https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/epsilon_normalized.xz
-wget https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/epsilon_normalized.t.xz
-unxz epsilon_normalized.xz
-unxz epsilon_normalized.t.xz
+Install Python packages. The command below install all packages for our benchmarck, but feel free to select some from these packages if you only want to run a subset of these frameworks.
+```bash
+pip install scikit-learn xgboost lightgbm pandas onnxruntime onnxruntime-gpu skl2onnx onnxmltools torch tensorflow tensorflow_decision_forests hummingbird-ml[extra] treelite treelite_runtime connectorx lleaves catboost py-xgboost-gpu pyyaml psycopg2-binary plotly
 ```
-TPCxAI Dataset Instructions available here: [Link](https://github.com/asu-cactus/netsdb/blob/tpcxai-tool-instructions/model-inference/decisionTree/README.md#generating-synthetic-data-using-tpcxai)
+
+## Run benchmark
+
+### Platforms with a Python interface
+
 
 To run a certain experiment
 
@@ -166,12 +84,13 @@ python data_processing.py -d [dataset]
 
 python train_model.py -d [dataset] -m [model]
 
-python convert_trained_model_to_framework.py -d [dataset] -m [model] -f [framework]
+python convert_trained_model_to_framework.py -d [dataset] -m [model] -f [frameworks]
 
 python test_model.py -d [dataset] -m [model] -f [framework] --batch_size [batch_size] --query_size [query_size]
-
+```
 
 **Examples**
+```
 python data_processing.py -d higgs
 
 python train_model.py -d higgs -m randomforest --num_trees 10
@@ -183,176 +102,12 @@ python convert_trained_model_to_framework.py -d higgs -m xgboost -f pytorch,torc
 python convert_trained_model_to_framework.py -d higgs -m lightgbm -f pytorch,torch,onnx,treelite,lightgbm,lleaves,netsdb --num_trees 10
 
 python test_model.py -d higgs -m xgboost -f TreeLite --batch_size 1000 --query_size 1000 --num_trees 10
-or modify and run run_test.sh
+```
+or modify and run `run_test.sh`
+```
 nohup ./run_test.sh &> ./results/test_output.txt &
 ```
 
-Get CPU Usage
-
-```
-echo "CPU Usage: "$[100-$(vmstat 1 2|tail -1|awk '{print $15}')]"%"
-```
-
-GPU Environment Setup
-
-g2dn.2xlarge, with Deep Learning AMI GPU PyTorch 1.12.0 (Ubuntu 20.04) 20220817 AMI ( ami-0f5b2957914692f92)
-
-Install the following libraries
-
-```
-sudo conda install -c conda-forge py-xgboost-gpu
-sudo conda install pyyaml
-sudo conda install connectorx
-sudo conda install psycopg2
-conda install -c conda-forge treelite
-sudo conda install -c conda-forge pandas
-pip install hummingbird-ml[extra]
-pip install onnxruntime
-pip install skl2onnx
-pip install onnxmltools
-pip install tensorflow
-pip install tensorflow_decision_forests –upgrade
-pip install plotly
-```
-
-tvm gpu must be built from source, code will be added later.
-
-rapids installation instructions will be updated later
-
-pip install apache-tvm, will install prebuilt library, might not run on multithreaded CPUs and does not support GPU.
-
-
-# Generating Synthetic Data using TPCxAI
-* Tool Download Link: [TPCxAI Tool](https://www.tpc.org/tpc_documents_current_versions/download_programs/tools-download-request5.asp?bm_type=TPCX-AI&bm_vers=1.0.2&mode=CURRENT-ONLY)
-* Documentation Link: [TPCxAI Documentation](https://www.tpc.org/tpc_documents_current_versions/pdf/tpcx-ai_v1.0.2.pdf)
-## Setup & Instructions
-1. Once Downloaded, in the root folder open file *setenv.sh* and find environment variable `TPCxAI_SCALE_FACTOR`.
-2. Based on the required size, change the value of the Scale Factor. This value represents the size of the generated datasets across all the 10 Use Cases that TPCxAI supports (For more details on the use-cases, check the Documentation). 
-    | Scale Factor  | Size  |
-    | ------------- | ----- |
-    | 1             | 1GB   |
-    | 3             | 3GB   |
-    | 10            | 10GB  |
-    | 30            | 30GB  |
-    | 100           | 100GB |
-    | ...           | ...   |
-    | 10,000        | 10TB  |
- > TPCxAI Supports Scale Factors in multiples of form `(1|3)*10^x` upto `10,000`. *(i.e.: 1, 3, 10, 30, 100, 300, ..., 10,000)*
-3. Once the value is set, save and close the file.
-4. Run the file `TPCx-AI_Benchmarkrun.sh`. It takes a while depending on the Scale Factor.
-5. Once done, the generated datasets should be available at `[tool_root_dir]/output/data/`
-
-# Decision Tree Experiments
-
-## Project Setup
-
-### PostgreSQL
-
-```
-#Install tools to download and unzip dataset.
-sudo apt update
-sudo apt install wget gzip bzip2 unzip xz-utils
-wget https://archive.ics.uci.edu/ml/machine-learning-databases/00280/HIGGS.csv.gz
-gzip -d HIGGS.csv.gz
-
-#Install postgres DBMS
-sudo apt install postgresql postgresql-contrib
-
-##The following steps are optional. They show you how to login and create a table/relation.
-##The python script split_data.py will create the
-#Login in
-sudo -i -u postgres
-
-#Run postgres DBMS
-psql
-
-#Default username and password are both "postgres", which are used in our config.json file.
-#In case you want to change the password, you can do the following:
-postgres=# \password postgres
-Enter new password: <new-password>
-
-#Create Table and load
-postgres=# CREATE TABLE higgs(label REAL NOT NULL, leptonpT REAL NOT NULL, leptoneta REAL NOT NULL, leptonphi REAL NOT NULL, missingenergymagnitude REAL NOT NULL, missingenergyphi REAL NOT NULL, jet1pt REAL NOT NULL, jet1eta REAL NOT NULL, jet1phi REAL NOT NULL, jet1btag REAL NOT NULL, jet2pt REAL NOT NULL, jet2eta REAL NOT NULL, jet2phi REAL NOT NULL, jet2btag REAL NOT NULL, jet3pt REAL NOT NULL, jet3eta REAL NOT NULL, jet3phi REAL NOT NULL, jet3btag REAL NOT NULL, jet4pt REAL NOT NULL, jet4eta REAL NOT NULL, jet4phi REAL NOT NULL, jet4btag REAL NOT NULL, mjj REAL NOT NULL, mjjj REAL NOT NULL, mlv REAL NOT NULL, mjlv REAL NOT NULL, mbb REAL NOT NULL, mwbb REAL NOT NULL, mwwbb REAL NOT NULL);
-
-postgres=# copy higgs from 'HIGGS.csv' with CSV;
-
-#Quite postgres DBMS
-postgres=# \q
-```
-
-You must first run split_data.py to split a dataset into training part and testing part, and load both parts to PostgreSQL, which is a prerequisite for running train_model.py and test_model.py.
-
-TO MOUNT THE DRIVE ON EC2
-
-```
-sudo file -s /dev/nvme1n1
-sudo mkfs -t xfs /dev/nvme1n1
-sudo mkdir /mnt/data
-sudo mount /dev/nvme1n1 /mnt/data
-cd /mnt
-sudo chmod 777 data
-```
-
-DATASETS
-
-```
-#higgs
-wget https://archive.ics.uci.edu/ml/machine-learning-databases/00280/HIGGS.csv.gz
-gzip -d HIGGS.csv.gz
-
-#airline
-wget "http://kt.ijs.si/elena_ikonomovska/datasets/airline/airline_14col.data.bz2"
-bzip2 -dk airline_14col.data.bz2
-
-#fraud
-kaggle datasets download mlg-ulb/creditcardfraud -f creditcard.csv.zip
-unzip creditcard.csv.zip
-
-#year
-wget "https://archive.ics.uci.edu/ml/machine-learning-databases/00203/YearPredictionMSD.txt.zip"
-unzip YearPredictionMSD.txt.zip
-
-#epsilon
-wget https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/epsilon_normalized.xz
-wget https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/epsilon_normalized.t.xz
-unxz epsilon_normalized.xz
-unxz epsilon_normalized.t.xz
-```
-TPCxAI Dataset Instructions available here: [Link](https://github.com/asu-cactus/netsdb/blob/tpcxai-tool-instructions/model-inference/decisionTree/README.md#generating-synthetic-data-using-tpcxai)
-
-To run a certain experiment
-
-Datasets: higgs
-
-Classifiers: xgboost, randomforest, lightgbm
-
-Frameworks: Sklearn, ONNXCPU, TreeLite, HummingbirdPytorchCPU, HummingbirdTorchScriptCPU, HummingbirdTVMCPU, LightGBM, Lleaves
-
-```
-python data_processing.py -d [dataset]
-
-python train_model.py -d [dataset] -m [model] --num_trees [num_trees]
-
-python convert_trained_model_to_framework.py -d [dataset] -m [model] -f [framework] --num_trees [num_trees]
-
-python test_model.py -d [dataset] -m [model] -f [framework] --batch_size [batch_size] --query_size [query_size] --num_trees [num_trees]
-
-
-**Examples**
-python data_processing.py -d higgs
-
-python train_model.py -d higgs -m randomforest --num_trees 10
-python train_model.py -d higgs -m xgboost --num_trees 10
-python train_model.py -d higgs -m lightgbm --num_trees 10
-
-python convert_trained_model_to_framework.py -d higgs -m randomforest -f onnx,treelite,tf-df,netsdb --num_trees 10
-python convert_trained_model_to_framework.py -d higgs -m xgboost -f onnx,treelite,tf-df,netsdb --num_trees 10
-python convert_trained_model_to_framework.py -d higgs -m lightgbm -f onnx,treelite,lleaves,netsdb --num_trees 10
-
-python test_model.py -d higgs -m xgboost -f TreeLite --batch_size 1000 --query_size 1000 --num_trees 10
-or modify and run run_test.sh
-nohup ./run_test.sh &> ./results/test_output.txt &
-```
 
 ### Single thread experiments
 
@@ -360,7 +115,7 @@ Add `threads` argument to `python test_model.py`, for example,
 ```
 python test_model.py -d higgs -m xgboost -f TreeLite --batch_size 100000 --query_size 100000 --num_trees 10 --threads 1
 ```
-
+### Yggdrasil
 To run Yggdrasil, which implements QuickScorer algorithm, first download the binaries from https://github.com/google/yggdrasil-decision-forests/releases to a separate directory and unzip it. Next, put the dataset and model to the right place. Yggdrasil requires the dataset has a header to generate meta data, which you don't need to care much about, but you should manually add a header to the first line of the dataset. For example, add a header to the fraud dataset, run 
 ```
 sed -i '1i feature_0,feature_1,feature_2,feature_3,feature_4,feature_5,feature_6,feature_7,feature_8,feature_9,feature_10,feature_11,feature_12,feature_13,feature_14,feature_15,feature_16,feature_17,feature_18,feature_19,feature_20,feature_21,feature_22,feature_23,feature_24,feature_25,feature_26,feature_27,label' datasets/creditcard_test.csv
@@ -376,31 +131,24 @@ Then run the benchmark:
 echo "CPU Usage: "$[100-$(vmstat 1 2|tail -1|awk '{print $15}')]"%"
 ```
 
+## Datasets
 
-### GPU Environment Setup
-
-g2dn.2xlarge, with Deep Learning AMI GPU PyTorch 1.12.0 (Ubuntu 20.04) 20220817 AMI ( ami-0f5b2957914692f92)
-
-Install the following libraries
-
-```
-sudo conda install -c conda-forge py-xgboost-gpu
-sudo conda install pyyaml
-sudo conda install connectorx
-sudo conda install psycopg2
-conda install -c conda-forge treelite
-sudo conda install -c conda-forge pandas
-pip install hummingbird-ml[extra]
-pip install onnxruntime
-pip install skl2onnx
-pip install onnxmltools
-pip install tensorflow
-pip install tensorflow_decision_forests –upgrade
-pip install plotly
-```
-
-tvm gpu must be built from source, code will be added later.
-
-rapids installation instructions will be updated later
-
-pip install apache-tvm, will install prebuilt library, might not run on multithreaded CPUs and does not support GPU.
+### Generating Synthetic Data using TPCxAI
+* Tool Download Link: [TPCxAI Tool](https://www.tpc.org/tpc_documents_current_versions/download_programs/tools-download-request5.asp?bm_type=TPCX-AI&bm_vers=1.0.2&mode=CURRENT-ONLY)
+* Documentation Link: [TPCxAI Documentation](https://www.tpc.org/tpc_documents_current_versions/pdf/tpcx-ai_v1.0.2.pdf)
+#### Setup & Instructions
+1. Once Downloaded, in the root folder open file *setenv.sh* and find environment variable `TPCxAI_SCALE_FACTOR`.
+2. Based on the required size, change the value of the Scale Factor. This value represents the size of the generated datasets across all the 10 Use Cases that TPCxAI supports (For more details on the use-cases, check the Documentation). 
+    | Scale Factor  | Size  |
+    | ------------- | ----- |
+    | 1             | 1GB   |
+    | 3             | 3GB   |
+    | 10            | 10GB  |
+    | 30            | 30GB  |
+    | 100           | 100GB |
+    | ...           | ...   |
+    | 10,000        | 10TB  |
+ > TPCxAI Supports Scale Factors in multiples of form `(1|3)*10^x` upto `10,000`. *(i.e.: 1, 3, 10, 30, 100, 300, ..., 10,000)*
+3. Once the value is set, save and close the file.
+4. Run the file `TPCx-AI_Benchmarkrun.sh`. It takes a while depending on the Scale Factor.
+5. Once done, the generated datasets should be available at `[tool_root_dir]/output/data/`
