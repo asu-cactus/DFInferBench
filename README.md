@@ -12,6 +12,7 @@ The framework also supports multiple well-known workloads, including Higgs, Airl
 - [System requirements](#system-requirements)
 - [Installation](#installation)
   - [PostgreSQL](#postgresql)
+  - [Kaggle](#kaggle)
   - [Platforms and other tools](#platforms-and-other-tools)
 - [Run benchmark](#run-benchmark)
   - [Platforms with a Python interface](#platforms-with-a-python-interface)
@@ -24,11 +25,14 @@ The framework also supports multiple well-known workloads, including Higgs, Airl
 <!-- tocstop -->
 
 ## System requirements
-
+We used AWS EC2 r4.x2large for CPU platforms and g4dn.2xlarge for GPU platforms in our benchmark, both of them run Ubuntu 20.04.
+Our code should run well on any Ubuntu machines, but the results from other type of machines should not be directly compared with the results in our paper.
 ## Installation
 ### PostgreSQL
 We used PostgreSQL to manage data for non-netsDB platforms. Please refer to [here](https://www.postgresql.org/download/) to install it. We used the default username and password in our code. Please either leave it as default, or modify the username and password in the `config.json` file.
 
+### Kaggle
+Some datasets are download from Kaggle, so you need to create a Kaggle account and download Kaggle API credentials ([here](https://github.com/Kaggle/kaggle-api) for details)
 ### Platforms and other tools
 It is recommended to use [conda](https://docs.conda.io/en/latest/miniconda.html) to manage your environment because one of the required package, TVM, is much easier to be installed using `conda`. TVM also recommends a Python version of 3.7.X+ or 3.8.X+, so we also recommend to create a conda virtual environment with Python 3.7 or 3.8. 
 ```bash
@@ -66,46 +70,61 @@ Install Python packages. The command below install all packages for our benchmar
 pip install scikit-learn xgboost lightgbm pandas onnxruntime onnxruntime-gpu skl2onnx onnxmltools torch tensorflow tensorflow_decision_forests hummingbird-ml[extra] treelite treelite_runtime connectorx lleaves catboost py-xgboost-gpu pyyaml psycopg2-binary plotly
 ```
 
+See [here](https://github.com/asu-cactus/netsdb) for installation of netsDB.
+
+
 ## Run benchmark
 
 ### Platforms with a Python interface
 
+Datasets: higgs, bosch, etc. See details [here](#datasets).
+Models: xgboost, randomforest, lightgbm
 
-To run a certain experiment
+Frameworks: 
+- Sklearn
+- ONNXCPU
+- TreeLite
+- HummingbirdPytorchCPU- 
+- HummingbirdTorchScriptCPU
+- HummingbirdTVMCPU
+- LightGBM
+- TFDF
+- Lleaves
+- HummingbirdPytorchGPU
+- HummingbirdTorchScriptGPU
+- ONNXGPU
+- HummingbirdTVMGPU
+- NvidiaFILGPU
+- XGBoostGPU
 
-Datasets: higgs
-
-Classifiers: xgboost, randomforest, lightgbm
-
-Frameworks: Sklearn, ONNXCPU, TreeLite, HummingbirdPytorchCPU, HummingbirdTorchScriptCPU, HummingbirdTVMCPU, LightGBM, Lleaves
-
+To run a certain experiment:
 ```
 python data_processing.py -d [dataset]
 
-python train_model.py -d [dataset] -m [model]
+python train_model.py -d [dataset] -m [model] -t [max-num-trees] -D [max-tree-depth]
 
-python convert_trained_model_to_framework.py -d [dataset] -m [model] -f [frameworks]
+python convert_trained_model_to_framework.py -d [dataset] -m [model] -f [frameworks-separated-by-comma] -t [max-num-trees] -D [max-tree-depth]
 
-python test_model.py -d [dataset] -m [model] -f [framework] --batch_size [batch_size] --query_size [query_size]
+python test_model.py -d [dataset] -m [model] -f [framework] --batch_size [batch-size] --query_size [query-size] -t [max-num-trees] -D [max-tree-depth] --threads [num-of-threads]
 ```
+Some arguments are optional. The default values of these arguments are the following:
+`-t`: 10; `-D`: 8; `-threads`: -1 (use all threads/cores)
+Except for TF-DF, all other platforms should have `batch-size` equals to `query-size`.
 
-**Examples**
+Here is an example to run xgboost on higgs
 ```
 python data_processing.py -d higgs
 
-python train_model.py -d higgs -m randomforest --num_trees 10
-python train_model.py -d higgs -m xgboost --num_trees 10
-python train_model.py -d higgs -m lightgbm --num_trees 10
+python train_model.py -d higgs -m xgboost
 
-python convert_trained_model_to_framework.py -d higgs -m randomforest -f pytorch,torch,tf-df,onnx,netsdb --num_trees 10
-python convert_trained_model_to_framework.py -d higgs -m xgboost -f pytorch,torch,onnx,treelite,tf-df,netsdb --num_trees 10
-python convert_trained_model_to_framework.py -d higgs -m lightgbm -f pytorch,torch,onnx,treelite,lightgbm,lleaves,netsdb --num_trees 10
+python convert_trained_model_to_framework.py -d higgs -m xgboost -f onnx,treelite,lleaves,netsdb
 
-python test_model.py -d higgs -m xgboost -f TreeLite --batch_size 1000 --query_size 1000 --num_trees 10
+python test_model.py -d higgs -m xgboost -f ONNXCPU --batch_size 100000 --query_size 100000
+python test_model.py -d higgs -m xgboost -f TreeLite --batch_size 100000 --query_size 100000
 ```
 or modify and run `run_test.sh`
 ```
-nohup ./run_test.sh &> ./results/test_output.txt &
+nohup bash run.sh &> ./results/test_output.txt &
 ```
 
 
@@ -123,6 +142,24 @@ sed -i '1i feature_0,feature_1,feature_2,feature_3,feature_4,feature_5,feature_6
 Then run the benchmark:
 ```
 ./benchmark_inference --dataset=csv:datasets/creditcard_test.csv --model=models/fraud_xgboost_500_6_tfdf/assets/ --generic=false --num_runs=1 --batch_size=56962
+```
+
+### netsDB
+First, compile model by running `scons libDFTest`.
+
+A example to run LightGBM model on the Epsilon dataset: 
+```bash
+NETSDB_ROOT='..'
+./scripts/cleanupNode.sh
+./scripts/startPseudoCluster.py 8 30000
+
+bin/testDecisionForest Y 100000 2000 5000 0 F A 42 1 $NETSDB_ROOT/dataset/epsilon_test.csv $NETSDB_ROOT/models/epsilon_lightgbm_10_8_netsdb LightGBM withoutMissing classification
+
+bin/testDecisionForest N 100000 2000 5000 0 F A 42 1 $NETSDB_ROOT/dataset/epsilon_test.csv $NETSDB_ROOT/models/epsilon_lightgbm_10_8_netsdb LightGBM withoutMissing classification
+
+bin/testDecisionForestWithCrossProduct Y 100000 2000 5000 0 42 1 $NETSDB_ROOT/dataset/epsilon_test.csv model-inference/decisionTree/$NETSDB_ROOT/models/epsilon_lightgbm_10_8_netsdb LightGBM 10 withoutMissing classification
+
+bin/testDecisionForestWithCrossProduct N 100000 2000 5000 0 42 1 $NETSDB_ROOT/dataset/epsilon_test.csv $NETSDB_ROOT/models/epsilon_lightgbm_10_8_netsdb LightGBM 10 withoutMissing classification
 ```
 
 ### Get CPU Usage

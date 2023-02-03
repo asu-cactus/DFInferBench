@@ -82,7 +82,7 @@ def convert_to_torch_model(model, config):
 def convert_to_tf_df_model(model, config):
     # Converting to TF-DF model
     import tensorflow as tf
-    import external.scikit_learn_model_converter as sk2tfdf_converter  # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
+    import third_party.scikit_learn_model_converter as sk2tfdf_converter  # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
     import xgboost_model_converter as xgb2tfdf_converter # TODO: Can we rename this file or move it, so that it is clear this is only meant for TFDF, and not used anywhere else.
     import shutil
 
