@@ -14,6 +14,7 @@ The framework also supports multiple well-known workloads, including Higgs, Airl
   - [PostgreSQL](#postgresql)
   - [Kaggle](#kaggle)
   - [Platforms and other tools](#platforms-and-other-tools)
+  - [netsDB](#install-netsdb)
 - [Run benchmark](#run-benchmark)
   - [Platforms with a Python interface](#platforms-with-a-python-interface)
   - [Single thread experiments](#single-thread-experiments)
@@ -70,8 +71,8 @@ Install Python packages. The command below install all packages for our benchmar
 pip install scikit-learn xgboost lightgbm pandas onnxruntime onnxruntime-gpu skl2onnx onnxmltools torch tensorflow tensorflow_decision_forests hummingbird-ml[extra] treelite treelite_runtime connectorx lleaves catboost py-xgboost-gpu pyyaml psycopg2-binary plotly
 ```
 
+### Install netsDB 
 See [here](https://github.com/asu-cactus/netsdb) for installation of netsDB.
-
 
 ## Run benchmark
 
@@ -146,6 +147,31 @@ Then run the benchmark:
 
 ### netsDB
 First, compile model by running `scons libDFTest`.
+
+Make sure to start the cluster:
+```bash
+./scripts/cleanupNode.sh
+./scripts/startPseudoCluster.py [num-of-threads] [shared-memory-size]
+```
+
+Then run UDF-centric:
+```
+NETSDB_ROOT=[root-path-for-model-and-data]
+
+bin/testDecisionForest Y [row-number] [column-number] [block-size] [label-column-index] F A [page-size] [num-of-partition] [datset-path] [netsdb-model-path] [model] [missing] [task-type]
+
+bin/testDecisionForest N [row-number] [column-number] [block-size] [label-column-index] F A [page-size] [num-of-partition] [datset-path] [netsdb-model-path] [model] [missing] [task-type]
+```
+
+Or run Rel-centric:
+```
+NETSDB_ROOT=[root-path-for-model-and-data]
+
+bin/testDecisionForestWithCrossProduct Y [row-number] [column-number] [block-size] [label-column-index] [page-size] [num-of-partitions] [datset-path] [netsdb-model-path] [model] [tree-number] [missing] [task-type]
+
+bin/testDecisionForestWithCrossProduct N [row-number] [column-number] [block-size] [label-column-index] [page-size] [num-of-partitions] [datset-path] [netsdb-model-path] [model] [tree-number] [missing] [task-type]
+```
+Our configurations to run netsDB experiments are shown in  `run_netsdb.sh`.
 
 A example to run LightGBM model on the Epsilon dataset: 
 ```bash

@@ -55,7 +55,7 @@
         "header": true
     },
     "fraud": {
-        "num_features": 28,
+        "num_features": 30,
         "rows": 284808,
         "batch_size": 100000,
         "query_size": 100000,
