@@ -33,6 +33,9 @@ Our code should run well on any Ubuntu machines, but the results from other type
 ### PostgreSQL
 We used PostgreSQL to manage data for non-netsDB platforms. Please refer to [here](https://www.postgresql.org/download/) to install it. We used the default username and password in our code. Please either leave it as default, or modify the username and password in the `config.json` file.
 
+### Connector-X
+We use Connector-X to connect to the PostgreSQL. Connector-X is the state-of-art of PostgreSQL connection that converts relational data to dataframes for science applications. Please refer to [here](https://github.com/sfu-db/connector-x) to install it.
+
 ### Kaggle
 Some datasets are download from Kaggle, so you need to create a Kaggle account and download Kaggle API credentials ([here](https://github.com/Kaggle/kaggle-api) for details)
 ### Platforms and other tools
