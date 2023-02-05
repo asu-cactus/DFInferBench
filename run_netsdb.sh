@@ -52,9 +52,9 @@ case $DATASET in
 "fraud")
     ROWNUM="56962"
     COLNUM="30"
-    BLOCKSIZE="56962"
+    BLOCKSIZE="7121"
     LABELCOL="30"
-    PAGESIZE="7"
+    PAGESIZE="1"
     PARTITIONNUM="1"
     DATASETNAME="creditcard.csv_test.csv"
     MISSING="withoutMissing"

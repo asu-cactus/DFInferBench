@@ -158,9 +158,9 @@ Then run UDF-centric:
 ```
 NETSDB_ROOT=[root-path-for-model-and-data]
 
-bin/testDecisionForest Y [row-number] [column-number] [block-size] [label-column-index] F A [page-size] [num-of-partition] [datset-path] [netsdb-model-path] [model] [missing] [task-type]
+bin/testDecisionForest Y [row-number] [column-number] [block-size] [label-column-index] F A [page-size] [num-of-partition] [datsaet-path] [netsdb-model-path] [model] [missing] [task-type]
 
-bin/testDecisionForest N [row-number] [column-number] [block-size] [label-column-index] F A [page-size] [num-of-partition] [datset-path] [netsdb-model-path] [model] [missing] [task-type]
+bin/testDecisionForest N [row-number] [column-number] [block-size] [label-column-index] F A [page-size] [num-of-partition] [dataset-path] [netsdb-model-path] [model] [missing] [task-type]
 ```
 
 Or run Rel-centric:
