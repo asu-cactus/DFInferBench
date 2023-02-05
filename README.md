@@ -22,6 +22,7 @@ The framework also supports multiple well-known workloads, including Higgs, Airl
   - [netsDB](#netsdb)
 - [Datasets](#datasets)
   - [TPCxAI](#generating-synthetic-data-using-tpcxai)
+  - Other datasets can be downloaded using this [script](https://github.com/asu-cactus/DFInferBench/blob/master/data_processing.py)
 
 <!-- tocstop -->
 
