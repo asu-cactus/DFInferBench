@@ -13,9 +13,10 @@ warnings.filterwarnings('ignore')
 
 DATASET = None
 MODEL = None
+FRAMEWORK = None
 
 def parse_arguments(config):
-    global DATASET, MODEL
+    global DATASET, MODEL, FRAMEWORK
     parser = argparse.ArgumentParser(description='Arguments for train_model.')
     parser.add_argument("-d", "--dataset", required=True,  type=str, choices=[
         'higgs', 
@@ -38,7 +39,13 @@ def parse_arguments(config):
     parser.add_argument(
         "-D", "--depth", type=int, default=8,
         help="Depth of trees [Default value is 8].")
-
+    parser.add_argument(
+        "-f", "--framework", required=False, type=str,default="",
+        choices=[
+            'Spark'
+        ],
+        help="Framework to run the decision forest model.")
+    
     args = parser.parse_args()
     config['depth'] = args.depth
     config['num_trees'] = args.num_trees
@@ -46,7 +53,7 @@ def parse_arguments(config):
 
     DATASET = args.dataset
     MODEL = args.model
-    
+    FRAMEWORK = args.framework
     check_argument_conflicts(args)
     print(f"DATASET: {DATASET}")
     print(f"MODEL: {MODEL}")
@@ -163,11 +170,45 @@ def train(config, train_data):
             f"Time taken to save model using joblib: {calculate_time(save_model_time_start, save_model_time_end)}")
 
 
+def train_spark(config, train_data):
+    from pyspark.ml.classification import RandomForestClassifier
+    from pyspark.ml.feature import VectorAssembler
+ 
+    featureCols = train_data.schema.names
+    featureCols = featureCols[1:]
+    assembler = VectorAssembler(inputCols=featureCols, outputCol="features")
+    train_data = assembler.transform(train_data)
+    
+    rf = RandomForestClassifier(labelCol="label", featuresCol="features", numTrees=config['num_trees'],maxDepth=config['depth'], maxBins=32)
+    model = rf.fit(train_data)
+    
+    save_time_start = time.time()
+    model.write().overwrite().save(relative2abspath(
+        "models", f"{DATASET}_{MODEL}_{FRAMEWORK}_{config['num_trees']}_{config['depth']}"))
+    save_time_end = time.time()
+    print(f"Time taken to save model: {calculate_time(save_time_start, save_time_end)}")
+
+
+
 if __name__ == "__main__":
     config = json.load(open(relative2abspath("config.json")))
     parse_arguments(config)
     print(f"DEPTH: {config['depth']}")
     print(f"TREES: {config['num_trees']}")
-    train_data = fetch_data(DATASET,config,"train")
-    print(f"Number of training examples: {len(train_data)}")
-    train(config, train_data)
+    print(FRAMEWORK)
+    if FRAMEWORK == "Spark":
+        if not validate_spark_params(DATASET,MODEL):
+            exit()
+        from sparkmeasure import StageMetrics
+        spark = get_spark_session(config["spark"])
+        stagemetrics = StageMetrics(spark)
+        stagemetrics.begin()
+        train_data = fetch_data_spark(spark, DATASET, config, "train")
+        train_spark(config, train_data)
+        stagemetrics.end()
+        stagemetrics.print_report()
+        spark.stop()
+    else:    
+        train_data = fetch_data(DATASET,config,"train")
+        print(f"Number of training examples: {len(train_data)}")
+        train(config, train_data)

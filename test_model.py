@@ -60,7 +60,8 @@ def parse_arguments(config):
             'ONNXGPU',
             'HummingbirdTVMGPU',
             'NvidiaFILGPU',
-            'XGBoostGPU'
+            'XGBoostGPU',
+            'Spark'
         ],
         help="Framework to run the decision forest model.")
     parser.add_argument(
@@ -138,11 +139,60 @@ def load_sklearn_model(config, time_consume):
     return sklearnmodel
 
 
+def load_spark_model(config,time_consume):
+    from pyspark.ml.classification import RandomForestClassifier,RandomForestClassificationModel
+    print("LOADING: ", relative2abspath(
+        "models", f"{DATASET}_{MODEL}_{FRAMEWORK}_{config['num_trees']}_{config['depth']}"))
+    relative_path = relative2abspath(
+        "models", f"{DATASET}_{MODEL}_{FRAMEWORK}_{config['num_trees']}_{config['depth']}")
+    start_time = time.time()
+    model = RandomForestClassificationModel.load(relative_path)
+    time_consume["spark model loading time"] = calculate_time(start_time, time.time())
+    model.explainParams()
+    return model
+
+
+
 def test(*argv):
     if FRAMEWORK.endswith("GPU"):
         test_postprocess(*test_gpu(*argv))
     else:
         test_postprocess(*test_cpu(*argv))
+
+
+def test_spark(*argv):
+    if FRAMEWORK.endswith("GPU"):
+        #TODO : Add gpu support
+        print("GPU support not yet added")
+    else:
+        test_postprocess(*test_cpu_spark(*argv))
+
+
+def test_cpu_spark(test_data, model, config, time_consume):
+    from pyspark.ml.classification import RandomForestClassifier
+    from pyspark.ml.feature import VectorAssembler
+    from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+    start_time = time.time()
+
+    featureCols = test_data.schema.names
+    featureCols = featureCols[1:]
+    assembler = VectorAssembler(inputCols=featureCols, outputCol="features")
+    test_data = assembler.transform(test_data)
+
+    test_start_time = time.time()
+    predictions = model.transform(test_data)
+    # This is just for consistency and is not the actual inference time
+    time_consume["inference time"] = calculate_time(test_start_time,time.time()) 
+
+    start = time.time()
+    evaluator = MulticlassClassificationEvaluator(labelCol="label", predictionCol="prediction")
+    accuracy = evaluator.evaluate(predictions)
+    print("Accuracy = %s" % (accuracy))
+    print("Test Error = %s" % (1.0 - accuracy))
+    print(f"Evaluation time : {calculate_time(start, time.time())}")
+    
+    total_framework_time = calculate_time(start_time, time.time())
+    return (time_consume, 0, total_framework_time, config)
 
 
 def test_cpu(features, label, sklearnmodel, config, time_consume):
@@ -462,7 +512,22 @@ if __name__ == "__main__":
         "batch_size": config['batch_size'],
         "model": MODEL,
         "framework": FRAMEWORK}
-    features, label = load_data(config, time_consume)
-    sklearnmodel = load_sklearn_model(config, time_consume)
-    test(features, label, sklearnmodel, config, time_consume)
+    if FRAMEWORK == "Spark":
+        if not validate_spark_params(DATASET, MODEL):
+            exit()
+        spark = get_spark_session(config["spark"])
+        from sparkmeasure import StageMetrics
+        stagemetrics = StageMetrics(spark)
+        stagemetrics.begin()
+        test_data = fetch_data_spark(spark, DATASET, config, "test")
+        print((test_data.count(), len(test_data.columns))) 
+        model = load_spark_model(config, time_consume)
+        test_spark(test_data, model, config, time_consume)
+        stagemetrics.end()
+        stagemetrics.print_report()
+        spark.stop()
+    else:
+        features, label = load_data(config, time_consume)
+        sklearnmodel = load_sklearn_model(config, time_consume)
+        test(features, label, sklearnmodel, config, time_consume)
     print("==============EXPERIMENT ENDING=========================\n")
