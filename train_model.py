@@ -171,17 +171,28 @@ def train(config, train_data):
 
 
 def train_spark(config, train_data):
+    from pyspark.ml.regression import RandomForestRegressor
     from pyspark.ml.classification import RandomForestClassifier
-    from pyspark.ml.feature import VectorAssembler
- 
-    featureCols = train_data.schema.names
-    featureCols = featureCols[1:]
-    assembler = VectorAssembler(inputCols=featureCols, outputCol="features")
-    train_data = assembler.transform(train_data)
+    from pyspark.ml.feature import IndexToString,VectorAssembler,StringIndexer
+
+    if config[DATASET]["type"] == "classification":
+        ModelClass = RandomForestClassifier
+    else:
+        ModelClass = RandomForestRegressor
+
+    if DATASET == "criteo":
+        label_col = "label"
+    else:
+        featureCols = train_data.schema.names
+        label_col = config[DATASET]['y_col']
+        featureCols.remove(label_col)  
+        assembler = VectorAssembler(inputCols=featureCols, outputCol="features")
+        train_data = assembler.transform(train_data)
     
-    rf = RandomForestClassifier(labelCol="label", featuresCol="features", numTrees=config['num_trees'],maxDepth=config['depth'], maxBins=32)
+    rf = ModelClass(labelCol=label_col, featuresCol="features", numTrees=config['num_trees'],maxDepth=config['depth'], maxBins=32)
+
     model = rf.fit(train_data)
-    
+
     save_time_start = time.time()
     model.write().overwrite().save(relative2abspath(
         "models", f"{DATASET}_{MODEL}_{FRAMEWORK}_{config['num_trees']}_{config['depth']}"))
@@ -199,14 +210,9 @@ if __name__ == "__main__":
     if FRAMEWORK == "Spark":
         if not validate_spark_params(DATASET,MODEL):
             exit()
-        from sparkmeasure import StageMetrics
         spark = get_spark_session(config["spark"])
-        stagemetrics = StageMetrics(spark)
-        stagemetrics.begin()
         train_data = fetch_data_spark(spark, DATASET, config, "train")
         train_spark(config, train_data)
-        stagemetrics.end()
-        stagemetrics.print_report()
         spark.stop()
     else:    
         train_data = fetch_data(DATASET,config,"train")
