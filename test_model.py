@@ -155,7 +155,6 @@ def load_spark_model(config,time_consume):
     start_time = time.time()
     model = ModelClass.load(relative_path)
     time_consume["spark model loading time"] = calculate_time(start_time, time.time())
-    model.explainParams()
     return model
 
 
@@ -195,13 +194,13 @@ def test_cpu_spark(test_data, model, config, time_consume):
     test_start_time = time.time()
     predictions = model.transform(test_data)
 
-    output_folder = "spark_results_" + DATASET +  str(random.randint(0,10000))
+    output_folder = "spark_results_" + DATASET +  str(random.randint(0,10000)) 
     predictions.select("prediction").write.parquet(output_folder)    
     
     time_consume["inference time"] = calculate_time(test_start_time,time.time()) 
     
     start = time.time()
-    
+    '''
     if config[DATASET]["type"] == "classification":
         evaluator = MulticlassClassificationEvaluator(labelCol=label_col, predictionCol="prediction")
         accuracy = evaluator.evaluate(predictions)
@@ -211,7 +210,7 @@ def test_cpu_spark(test_data, model, config, time_consume):
         evaluator = RegressionEvaluator(labelCol=label_col, predictionCol="prediction", metricName="rmse")
         rmse = evaluator.evaluate(predictions)
         print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
-    
+    '''
     print(f"Evaluation time : {calculate_time(start, time.time())}") 
     total_framework_time = calculate_time(start_time, time.time())
     return (time_consume, 0, total_framework_time, config)
@@ -539,7 +538,6 @@ if __name__ == "__main__":
             exit()
         spark = get_spark_session(config["spark"])
         test_data = fetch_data_spark(spark, DATASET, config, "test")
-        print((test_data.count(), len(test_data.columns))) 
         model = load_spark_model(config, time_consume)
         test_spark(test_data, model, config, time_consume)
         spark.stop()

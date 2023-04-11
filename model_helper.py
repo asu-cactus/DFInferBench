@@ -43,7 +43,7 @@ def fetch_data(dataset, config, suffix, time_consume=None):
     if dataset == "criteo":        
         return fetch_criteo(suffix, time_consume)
     print("LOADING " + dataset + " " + suffix)
-
+    
     try:
         import connectorx as cx
         import psycopg2
@@ -92,8 +92,8 @@ def fetch_criteo_spark(spark,  config, suffix, time_consumed):
     df.cache().count()
     return df
 
-
-def fetch_data_spark(spark, dataset, config, suffix, time_consumed=None):
+def fetch_data_spark(spark, dataset, config, suffix, time_consumed=None): 
+   
     if dataset == "criteo":
         return fetch_criteo_spark(spark,config,suffix, time_consumed)
 
@@ -135,10 +135,8 @@ def get_spark_session(conf):
     from pyspark import SparkContext, SparkConf
     import psutil
 
-    memory_gb = int(psutil.virtual_memory()[1]/1000000000)
-    
+    memory_gb = int(psutil.virtual_memory()[1]/1000000000) 
     spark_conf = SparkConf().setAll(list(conf.items()))
-    spark_conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     spark_conf.set("spark.driver.memory", str(memory_gb) + "g")
     sc = SparkContext(conf = spark_conf).getOrCreate("DFInferBench")
     return SparkSession(sc)

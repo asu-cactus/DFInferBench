@@ -8,8 +8,7 @@
     },
     "spark": {
 	"spark.eventLog.enabled": "true",
-	"spark.serializer": "org.apache.spark.serializer.KryoSerializer",
-    	"spark.jars" : "/home/local/ASUAD/snola119/DFInferBench/postgresql-42.6.0.jar"	
+    	"spark.jars" : "/home/ubuntu/DFInferBench/postgresql-42.6.0.jar"	
     },
     "higgs": {
         "num_features": 28,
