@@ -173,7 +173,7 @@ bin/testDecisionForestWithCrossProduct N [row-number] [column-number] [block-siz
 ```
 Our configurations to run netsDB experiments are shown in  `run_netsdb.sh`.
 
-A example to run LightGBM model on the Epsilon dataset: 
+Here is an example. To run LightGBM model on the Epsilon dataset: 
 ```bash
 NETSDB_ROOT='..'
 ./scripts/cleanupNode.sh
