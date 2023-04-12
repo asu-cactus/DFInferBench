@@ -8,7 +8,7 @@ from hummingbird.ml import constants
 from hummingbird.ml import convert, convert_batch
 
 dataset_folder = "dataset/"
-
+SPARK_DATASETS = ["higgs","fraud","epsilon","airline_classification","year","criteo"]
 
 def calculate_time(start_time, end_time):
     diff = (end_time-start_time)*1000
@@ -43,7 +43,7 @@ def fetch_data(dataset, config, suffix, time_consume=None):
     if dataset == "criteo":        
         return fetch_criteo(suffix, time_consume)
     print("LOADING " + dataset + " " + suffix)
-
+    
     try:
         import connectorx as cx
         import psycopg2
@@ -77,12 +77,69 @@ def fetch_data(dataset, config, suffix, time_consume=None):
     except psycopg2.Error as e:
         print("Postgres Database error: " + e + "/n")
 
-# def get_data(data, size=-1):
-#     np_data = data.to_numpy() if not isinstance(data, np.ndarray) else data
-#     if size != -1:
-#         np_data = np_data[0:size, :]
-#     return np_data
 
+def validate_spark_params(dataset, model):
+    if model != "randomforest" or dataset not in SPARK_DATASETS:
+        print(f"Invalid params for spark. Models supported : randomforest, dataset supported : {SPARK_DATASETS}")
+        return False
+    return True
+
+
+def fetch_criteo_spark(spark,  config, suffix, time_consumed):
+    path = relative2abspath(dataset_folder, "criteo.kaggle2014.svm", f"{suffix}.txt.svm")
+    df = spark.read.format("libsvm").option("numFeatures",config["criteo"]["num_features"]).load(path)
+    df = df.repartition(spark.sparkContext.defaultParallelism)
+    df.cache().count()
+    return df
+
+def fetch_data_spark(spark, dataset, config, suffix, time_consumed=None): 
+   
+    if dataset == "criteo":
+        return fetch_criteo_spark(spark,config,suffix, time_consumed)
+
+    pgsqlconfig = config["pgsqlconfig"]
+    datasetconfig = config[dataset]
+    query = datasetconfig["query"]+"_"+suffix
+    dbURL =  "jdbc:postgresql://" + pgsqlconfig["host"]+":" + pgsqlconfig["port"]+"/"+pgsqlconfig["dbname"]
+    start_time = time.time()
+    try:
+        df = spark.read \
+            .format("jdbc") \
+            .option("url",  dbURL) \
+            .option("query", query) \
+            .option("user", pgsqlconfig["username"]) \
+            .option("driver", "org.postgresql.Driver") \
+            .option("password", pgsqlconfig["password"]) \
+            .load()
+
+        if dataset == "epsilon":
+            length = len(df.head()["row"])
+            df = df.select(['label'] + [df.row[x] for x in range(length)])
+        
+        df = df.repartition(spark.sparkContext.defaultParallelism)
+        df.cache().count()
+        
+        end_time = time.time()
+        data_loading_time = calculate_time(start_time, end_time)
+        if time_consumed is not None:
+            time_consumed["data loading time"] = data_loading_time
+        print(
+            f"Time Taken to load {dataset} as a dataframe is: {data_loading_time}")    
+        return df
+    except Exception as e:
+        print(e)
+        
+
+def get_spark_session(conf):
+    from pyspark.sql.session import SparkSession
+    from pyspark import SparkContext, SparkConf
+    import psutil
+
+    memory_gb = int(psutil.virtual_memory()[1]/1000000000) 
+    spark_conf = SparkConf().setAll(list(conf.items()))
+    spark_conf.set("spark.driver.memory", str(memory_gb) + "g")
+    sc = SparkContext(conf = spark_conf).getOrCreate("DFInferBench")
+    return SparkSession(sc)
 
 def convert_to_hummingbird_model(model, backend, test_data, batch_size, device, nthreads):
     remainder_size = test_data.shape[0] % batch_size
