@@ -12,7 +12,7 @@ The framework also supports multiple well-known workloads, including Higgs, Airl
 - [System requirements](#system-requirements)
 - [Installation](#installation)
   - [PostgreSQL](#postgresql)
-  - [Connector-X] (#Connector-X)
+  - [Connector-X](#Connector-X)
   - [Kaggle](#kaggle)
   - [Platforms and other tools](#platforms-and-other-tools)
   - [netsDB](#install-netsdb)
