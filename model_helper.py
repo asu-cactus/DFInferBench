@@ -99,7 +99,7 @@ def fetch_data_spark(spark, dataset, config, suffix, time_consumed=None):
 
     pgsqlconfig = config["pgsqlconfig"]
     datasetconfig = config[dataset]
-    query = datasetconfig["query"]+"_"+suffix
+    query = datasetconfig["query"]+"_"+suffix + " LIMIT 2"
     dbURL =  "jdbc:postgresql://" + pgsqlconfig["host"]+":" + pgsqlconfig["port"]+"/"+pgsqlconfig["dbname"]
     start_time = time.time()
     try:

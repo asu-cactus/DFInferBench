@@ -153,6 +153,7 @@ def load_spark_model(config,time_consume):
     relative_path = relative2abspath(
         "models", f"{DATASET}_{MODEL}_{FRAMEWORK}_{config['num_trees']}_{config['depth']}")
     start_time = time.time()
+
     model = ModelClass.load(relative_path)
     time_consume["spark model loading time"] = calculate_time(start_time, time.time())
     model.explainParams()
@@ -175,7 +176,82 @@ def test_spark(*argv):
         test_postprocess(*test_cpu_spark(*argv))
 
 
-def test_cpu_spark(test_data, model, config, time_consume):
+
+
+def concat_columns(trees,test_data):
+    from pyspark.sql.functions import col
+    
+    cols = ["t" + str(i) for i in range(len(trees))]
+    predictions = []
+    for i, tree in enumerate(trees):
+        tree_predictions = tree.transform(test_data)
+        print(tree_predictions.count())
+        tree_predictions.show()
+        predictions.append(tree_predictions)
+
+    combined_predictions = predictions[0].select(col("prediction").alias(cols[0]))
+    combined_predictions.show()
+    for i in range(1, len(predictions)):
+        predictions[i] = predictions[i].withColumnRenamed("prediction",cols[i])
+        combined_predictions = combined_predictions.withColumn(cols[i], predictions[i][cols[i]])
+    combined_predictions.show()    
+
+
+def with_groupby(trees, test_data):
+    from pyspark.sql.functions import explode, col, count,first
+    from pyspark.sql.functions import max as spmax
+    tree_predictions = []
+
+    for tree in trees:
+        tree_prediction = tree.transform(test_data)
+        tree_predictions.append(tree_prediction)
+
+    combined_predictions = tree_predictions[0]
+    for i in range(1, len(tree_predictions)):
+        combined_predictions = combined_predictions.union(tree_predictions[i])
+    prediction_counts = combined_predictions.groupBy("features","prediction").agg(count('*').alias("count"))
+    max_predictions = prediction_counts.groupBy("features").agg(spmax("count").alias("count"))
+    result = prediction_counts.join(max_predictions, ["features","count"], "inner").select("features","prediction","count")
+    result.select("prediction").write.parquet(str(time.time()))  
+
+def with_groupby_index(trees, test_data):
+    from pyspark.sql.functions import explode, col, count,first
+    from pyspark.sql.functions import max as spmax
+    from pyspark.sql.functions import monotonically_increasing_id
+    tree_predictions = []
+    test_data = test_data.withColumn("index", monotonically_increasing_id())
+
+    for tree in trees:
+        tree_prediction = tree.transform(test_data)
+        tree_predictions.append(tree_prediction)
+  
+    combined_predictions = tree_predictions[0]
+    for i in range(1, len(tree_predictions)):
+        combined_predictions = combined_predictions.union(tree_predictions[i])
+    prediction_counts = combined_predictions.groupBy("index","prediction").agg(count('*').alias("count"))
+    max_predictions = prediction_counts.groupBy("index").agg(spmax("count").alias("count"))
+    result = prediction_counts.join(max_predictions, ["index","count"], "inner").select("index","prediction","count")
+    result.select("prediction").write.parquet(str(time.time())) 
+
+def with_cross_product(spark, trees, test_data):
+    from pyspark.ml.classification import DecisionTreeClassificationModel
+    import shutil
+    shutil.rmtree('trees')
+    
+    tree_paths = []
+    for i in range(len(trees)):
+        path = "trees/" + trees[i].uid
+        tree_paths.append(path)
+        trees[i].save(path)
+   
+    trees_rdd = spark.sparkContext.parallelize(tree_paths)
+    cross_product = trees_rdd.cartesian(test_data.rdd)
+    #fails here
+    new_rdd = cross_product.map(lambda x: DecisionTreeClassificationModel.load(x[0]).uid).collect()
+
+    
+
+def test_cpu_spark(spark, test_data, model, config, time_consume):
     from pyspark.ml.feature import VectorAssembler, StringIndexer
     from pyspark.ml.evaluation import MulticlassClassificationEvaluator
     from pyspark.ml.evaluation import RegressionEvaluator
@@ -193,6 +269,27 @@ def test_cpu_spark(test_data, model, config, time_consume):
         test_data = assembler.transform(test_data)
 
     test_start_time = time.time()
+    trees = model.trees
+    #concat_columns(trees,test_data)
+    
+    #grouping by features
+    #with_groupby(trees,test_data) 
+    #with_groupby_index(trees,test_data)
+    with_cross_product(spark, trees,test_data)
+    '''
+    predictions = []
+    for i, tree in enumerate(trees):
+        tree_predictions = tree.transform(test_data)
+        predictions.append(tree_predictions)
+
+    combined_predictions = predictions[0]
+    for i in range(1, len(predictions)):
+        combined_predictions = combined_predictions.union(predictions[i])
+
+    print(combined_predictions.count())
+
+    
+    
     predictions = model.transform(test_data)
 
     output_folder = "spark_results_" + DATASET +  str(random.randint(0,10000))
@@ -213,6 +310,7 @@ def test_cpu_spark(test_data, model, config, time_consume):
         print("Root Mean Squared Error (RMSE) on test data = %g" % rmse)
     
     print(f"Evaluation time : {calculate_time(start, time.time())}") 
+    '''
     total_framework_time = calculate_time(start_time, time.time())
     return (time_consume, 0, total_framework_time, config)
 
@@ -541,7 +639,7 @@ if __name__ == "__main__":
         test_data = fetch_data_spark(spark, DATASET, config, "test")
         print((test_data.count(), len(test_data.columns))) 
         model = load_spark_model(config, time_consume)
-        test_spark(test_data, model, config, time_consume)
+        test_spark(spark,test_data, model, config, time_consume)
         spark.stop()
     else:
         features, label = load_data(config, time_consume)
