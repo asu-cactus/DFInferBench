@@ -77,7 +77,7 @@ pip install scikit-learn xgboost lightgbm pandas onnxruntime onnxruntime-gpu skl
 ```
 
 ### Install netsDB 
-See [here](https://github.com/asu-cactus/netsdb) for installation of netsDB.
+See [here](https://anonymous.4open.science/r/netsdb-9D55/) for installation of netsDB.
 
 ## Run benchmark
 
