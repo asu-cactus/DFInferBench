@@ -10,27 +10,28 @@ The framework also supports multiple well-known workloads, including Higgs, Airl
 
 <!-- toc -->
 - [System requirements](#system-requirements)
-- [Installation](#installation)
+- [Software Installation](#installation)
   - [PostgreSQL](#postgresql)
   - [Connector-X](#Connector-X)
   - [Kaggle](#kaggle)
   - [Platforms and other tools](#platforms-and-other-tools)
   - [netsDB](#install-netsdb)
+- [Datasets](#datasets)
+  - [TPCxAI](#generating-synthetic-data-using-tpcxai)
+  - Other datasets can be downloaded using this [script](https://github.com/asu-cactus/DFInferBench/blob/master/data_processing.py)
 - [Run benchmark](#run-benchmark)
   - [Platforms with a Python interface](#platforms-with-a-python-interface)
   - [Single thread experiments](#single-thread-experiments)
   - [Yggdrasil](#yggdrasil)
   - [netsDB](#netsdb)
-- [Datasets](#datasets)
-  - [TPCxAI](#generating-synthetic-data-using-tpcxai)
-  - Other datasets can be downloaded using this [script](https://github.com/asu-cactus/DFInferBench/blob/master/data_processing.py)
+
 
 <!-- tocstop -->
 
 ## System requirements
 We used AWS EC2 r4.x2large for CPU platforms and g4dn.2xlarge for GPU platforms in our benchmark, both of them run Ubuntu 20.04.
 Our code should run well on any Ubuntu machines, but the results from other type of machines should not be directly compared with the results in our paper.
-## Installation
+## Software Installation
 ### PostgreSQL
 We used PostgreSQL to manage data for non-netsDB platforms. Please refer to [here](https://www.postgresql.org/download/) to install it. We used the default username and password in our code. Please either leave it as default, or modify the username and password in the `config.json` file.
 
@@ -78,6 +79,45 @@ pip install scikit-learn xgboost lightgbm pandas onnxruntime onnxruntime-gpu skl
 
 ### Install netsDB 
 See [here](https://anonymous.4open.science/r/netsdb-9D55/) for installation of netsDB.
+
+## Datasets
+
+### Download Datasets
+Please use the [script](https://github.com/asu-cactus/DFInferBench/blob/master/data_processing.py) to download most of the datasets that are supported by our benchmark framework, including: Epsilon, Fraud, Year, Bosch, Higgs, Criteo, and Airline.
+
+The statistics of these datasets are summarized in the below table:
+
+| Dataset  | NumRows | NumFeatures |
+| ---------| --------| ------------|
+| Epsilon  | 100K    | 2000        |
+| Fraud    | 285K    | 28          |
+| Year     | 515K    | 90          |
+| Bosch    | 1.184M  | 968         |
+| Higgs    | 11M     | 28          |
+| Criteo   | 51M     | 1M          |
+| Airline  | 115M    | 13          |
+
+In addition, we can support TPCx-AI (SF=30), which involves 131M samples, and 7 features for each sample. To prepare the TPCx-AI dataset, you need follow the below instructions:
+
+### Generating Synthetic Data using TPCxAI
+* Tool Download Link: [TPCxAI Tool](https://www.tpc.org/tpc_documents_current_versions/download_programs/tools-download-request5.asp?bm_type=TPCX-AI&bm_vers=1.0.2&mode=CURRENT-ONLY)
+* Documentation Link: [TPCxAI Documentation](https://www.tpc.org/tpc_documents_current_versions/pdf/tpcx-ai_v1.0.2.pdf)
+#### Setup & Instructions
+1. Once Downloaded, in the root folder open file *setenv.sh* and find environment variable `TPCxAI_SCALE_FACTOR`.
+2. Based on the required size, change the value of the Scale Factor. This value represents the size of the generated datasets across all the 10 Use Cases that TPCxAI supports (For more details on the use-cases, check the Documentation). 
+    | Scale Factor  | Size  |
+    | ------------- | ----- |
+    | 1             | 1GB   |
+    | 3             | 3GB   |
+    | 10            | 10GB  |
+    | 30            | 30GB  |
+    | 100           | 100GB |
+    | ...           | ...   |
+    | 10,000        | 10TB  |
+ > TPCxAI Supports Scale Factors in multiples of form `(1|3)*10^x` upto `10,000`. *(i.e.: 1, 3, 10, 30, 100, 300, ..., 10,000)*
+3. Once the value is set, save and close the file.
+4. Run the file `TPCx-AI_Benchmarkrun.sh`. It takes a while depending on the Scale Factor.
+5. Once done, the generated datasets should be available at `[tool_root_dir]/output/data/`
 
 ## Run benchmark
 
@@ -199,24 +239,4 @@ bin/testDecisionForestWithCrossProduct N 100000 2000 5000 0 42 1 $NETSDB_ROOT/da
 echo "CPU Usage: "$[100-$(vmstat 1 2|tail -1|awk '{print $15}')]"%"
 ```
 
-## Datasets
 
-### Generating Synthetic Data using TPCxAI
-* Tool Download Link: [TPCxAI Tool](https://www.tpc.org/tpc_documents_current_versions/download_programs/tools-download-request5.asp?bm_type=TPCX-AI&bm_vers=1.0.2&mode=CURRENT-ONLY)
-* Documentation Link: [TPCxAI Documentation](https://www.tpc.org/tpc_documents_current_versions/pdf/tpcx-ai_v1.0.2.pdf)
-#### Setup & Instructions
-1. Once Downloaded, in the root folder open file *setenv.sh* and find environment variable `TPCxAI_SCALE_FACTOR`.
-2. Based on the required size, change the value of the Scale Factor. This value represents the size of the generated datasets across all the 10 Use Cases that TPCxAI supports (For more details on the use-cases, check the Documentation). 
-    | Scale Factor  | Size  |
-    | ------------- | ----- |
-    | 1             | 1GB   |
-    | 3             | 3GB   |
-    | 10            | 10GB  |
-    | 30            | 30GB  |
-    | 100           | 100GB |
-    | ...           | ...   |
-    | 10,000        | 10TB  |
- > TPCxAI Supports Scale Factors in multiples of form `(1|3)*10^x` upto `10,000`. *(i.e.: 1, 3, 10, 30, 100, 300, ..., 10,000)*
-3. Once the value is set, save and close the file.
-4. Run the file `TPCx-AI_Benchmarkrun.sh`. It takes a while depending on the Scale Factor.
-5. Once done, the generated datasets should be available at `[tool_root_dir]/output/data/`
