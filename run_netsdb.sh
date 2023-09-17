@@ -47,13 +47,18 @@ case $DATASET in
     MISSING="withoutMissing"
     TYPE="classification"
     ;;
+#bin/testDecisionForestWithCrossProduct N 131564161 7 50000 7 32 1 ~/data/tpcxai_fraud_test.csv ~/model/tpcxai_fraud_xgboost_10_8_netsdb XGBoost 10 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct N 131564161 7 50000 7 32 1 ~/data/tpcxai_fraud_test.csv ~/model/tpcxai_fraud_xgboost_500_8_netsdb XGBoost 500 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct N 131564161 7 50000 7 32 1 ~/data/tpcxai_fraud_test.csv ~/model/tpcxai_fraud_xgboost_1600_8_netsdb XGBoost 1600 withoutMissing classification
+
+
 "tpcxai_fraud")
     ROWNUM="131564161"
     COLNUM="7"
-    BLOCKSIZE="500000"
+    BLOCKSIZE="50000"
     LABELCOL="7"
     PAGESIZE="32"
-    PARTITIONNUM="5"
+    PARTITIONNUM="1"
     DATASETNAME="tpcxai_fraud_test.csv"
     MISSING="withoutMissing"
     TYPE="classification"
