@@ -86,6 +86,7 @@ case $DATASET in
     TYPE="regression"
     ;;
 
+#bin/testDecisionForestWithCrossProduct N 100000 2000 6250 0 52 1 ~/data/epsilon_test.csv ~/model/epsilon_lightgbm_500_8_netsdb LightGBM 500 withoutMissing classification
 #bin/testDecisionForestWithCrossProduct N 100000 2000 1000 0 9 1 ~/data/epsilon_test.csv ~/model/epsilon_lightgbm_1600_8_netsdb LightGBM 1600 withoutMissing classification
 #bin/testDecisionForest N 100000 2000 6250 0 F A 52 1 ~/data/epsilon_test.csv ~/model/epsilon_xgboost_10_8_netsdb XGBoost withoutMissing classification
 "epsilon")
