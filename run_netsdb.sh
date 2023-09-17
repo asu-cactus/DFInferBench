@@ -15,18 +15,21 @@ case $RUNTEST in
     ;;
 esac
 
+#Relation-Centric
+# Higgs: Shuffle Page Size = 512 MB, Each tree result has a size of numTrees*4bytes, the block size should be significantly smaller than 512MB/numTrees/4
 case $DATASET in
 "higgs")
     ROWNUM="2200000"
     COLNUM="28"
-    BLOCKSIZE="275000"
+    BLOCKSIZE="10000" 
     LABELCOL="0"
     PAGESIZE="32"
-    PARTITIONNUM="5"
+    PARTITIONNUM="1"
     DATASETNAME="HIGGS.csv_test.csv"
     MISSING="withoutMissing"
     TYPE="classification"
     ;;
+
 "airline_classification")
     ROWNUM="23013803"
     COLNUM="13"
