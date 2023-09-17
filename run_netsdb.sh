@@ -33,13 +33,16 @@ case $DATASET in
     TYPE="classification"
     ;;
 
+#bin/testDecisionForestWithCrossProduct  N 23013803 13 50000 13 64 1 ~/data/airline_classification.csv_test.csv  ~/model/airline_xgboost_1600_8_netsdb XGBoost 1600 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct  N 23013803 13 50000 13 64 1 ~/data/airline_classification.csv_test.csv  ~/model/airline_xgboost_500_8_netsdb XGBoost 500 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct  N 23013803 13 50000 13 64 1 ~/data/airline_classification.csv_test.csv  ~/model/airline_xgboost_10_8_netsdb XGBoost 10 withoutMissing classification
 "airline_classification")
     ROWNUM="23013803"
     COLNUM="13"
-    BLOCKSIZE="3000000"
+    BLOCKSIZE="50000"
     LABELCOL="13"
-    PAGESIZE="160"
-    PARTITIONNUM="5"
+    PAGESIZE="64"
+    PARTITIONNUM="1"
     DATASETNAME="airline_classification.csv_test.csv"
     MISSING="withoutMissing"
     TYPE="classification"
