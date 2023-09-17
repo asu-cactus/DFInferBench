@@ -18,6 +18,8 @@ esac
 #Relation-Centric
 # Higgs: Shuffle Page Size = 512 MB, Each tree result has a size of numTrees*4bytes, the block size should be significantly smaller than 512MB/numTrees/4
 # bin/testDecisionForestWithCrossProduct N 2200000 28 50000 0 32 1 ~/data/HIGGS.csv_test.csv ~/model/higgs_xgboost_1600_8_netsdb XGBoost 1600 withoutMissing cla^Cification
+# bin/testDecisionForestWithCrossProduct N 2200000 28 100000 0 32 1 ~/data/HIGGS.csv_test.csv ~/model/higgs_xgboost_500_8_netsdb XGBoost 500 withoutMissing classification
+# bin/testDecisionForestWithCrossProduct N 2200000 28 50000 0 32 1 ~/data/HIGGS.csv_test.csv ~/model/higgs_xgboost_10_8_netsdb XGBoost 10 withoutMissing classification
 case $DATASET in
 "higgs")
     ROWNUM="2200000"
