@@ -15,36 +15,50 @@ case $RUNTEST in
     ;;
 esac
 
+#Relation-Centric
+# Higgs: Shuffle Page Size = 512 MB, Each tree result has a size of numTrees*4bytes, the block size should be significantly smaller than 512MB/numTrees/4
+# bin/testDecisionForestWithCrossProduct N 2200000 28 50000 0 32 1 ~/data/HIGGS.csv_test.csv ~/model/higgs_xgboost_1600_8_netsdb XGBoost 1600 withoutMissing cla^Cification
+# bin/testDecisionForestWithCrossProduct N 2200000 28 100000 0 32 1 ~/data/HIGGS.csv_test.csv ~/model/higgs_xgboost_500_8_netsdb XGBoost 500 withoutMissing classification
+# bin/testDecisionForestWithCrossProduct N 2200000 28 50000 0 32 1 ~/data/HIGGS.csv_test.csv ~/model/higgs_xgboost_10_8_netsdb XGBoost 10 withoutMissing classification
 case $DATASET in
 "higgs")
     ROWNUM="2200000"
     COLNUM="28"
-    BLOCKSIZE="275000"
+    BLOCKSIZE="50000" 
     LABELCOL="0"
     PAGESIZE="32"
-    PARTITIONNUM="5"
+    PARTITIONNUM="1"
     DATASETNAME="HIGGS.csv_test.csv"
     MISSING="withoutMissing"
     TYPE="classification"
     ;;
+
+#bin/testDecisionForestWithCrossProduct  N 23013803 13 50000 13 64 1 ~/data/airline_classification.csv_test.csv  ~/model/airline_xgboost_1600_8_netsdb XGBoost 1600 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct  N 23013803 13 50000 13 64 1 ~/data/airline_classification.csv_test.csv  ~/model/airline_xgboost_500_8_netsdb XGBoost 500 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct  N 23013803 13 50000 13 64 1 ~/data/airline_classification.csv_test.csv  ~/model/airline_xgboost_10_8_netsdb XGBoost 10 withoutMissing classification
 "airline_classification")
     ROWNUM="23013803"
     COLNUM="13"
-    BLOCKSIZE="3000000"
+    BLOCKSIZE="50000"
     LABELCOL="13"
-    PAGESIZE="160"
-    PARTITIONNUM="5"
+    PAGESIZE="64"
+    PARTITIONNUM="1"
     DATASETNAME="airline_classification.csv_test.csv"
     MISSING="withoutMissing"
     TYPE="classification"
     ;;
+#bin/testDecisionForestWithCrossProduct N 131564161 7 50000 7 32 1 ~/data/tpcxai_fraud_test.csv ~/model/tpcxai_fraud_xgboost_10_8_netsdb XGBoost 10 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct N 131564161 7 50000 7 32 1 ~/data/tpcxai_fraud_test.csv ~/model/tpcxai_fraud_xgboost_500_8_netsdb XGBoost 500 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct N 131564161 7 50000 7 32 1 ~/data/tpcxai_fraud_test.csv ~/model/tpcxai_fraud_xgboost_1600_8_netsdb XGBoost 1600 withoutMissing classification
+
+
 "tpcxai_fraud")
     ROWNUM="131564161"
     COLNUM="7"
-    BLOCKSIZE="500000"
+    BLOCKSIZE="50000"
     LABELCOL="7"
     PAGESIZE="32"
-    PARTITIONNUM="5"
+    PARTITIONNUM="1"
     DATASETNAME="tpcxai_fraud_test.csv"
     MISSING="withoutMissing"
     TYPE="classification"
@@ -71,12 +85,16 @@ case $DATASET in
     MISSING="withoutMissing"
     TYPE="regression"
     ;;
+
+#bin/testDecisionForestWithCrossProduct N 100000 2000 6250 0 52 1 ~/data/epsilon_test.csv ~/model/epsilon_lightgbm_500_8_netsdb LightGBM 500 withoutMissing classification
+#bin/testDecisionForestWithCrossProduct N 100000 2000 1000 0 9 1 ~/data/epsilon_test.csv ~/model/epsilon_lightgbm_1600_8_netsdb LightGBM 1600 withoutMissing classification
+#bin/testDecisionForest N 100000 2000 6250 0 F A 52 1 ~/data/epsilon_test.csv ~/model/epsilon_xgboost_10_8_netsdb XGBoost withoutMissing classification
 "epsilon")
     ROWNUM="100000"
     COLNUM="2000"
-    BLOCKSIZE="5000"
+    BLOCKSIZE="1000"
     LABELCOL="0"
-    PAGESIZE="42"
+    PAGESIZE="9"
     PARTITIONNUM="1"
     DATASETNAME="epsilon_test.csv"
     MISSING="withoutMissing"
